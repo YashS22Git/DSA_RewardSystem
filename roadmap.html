@@ -95,6 +95,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/data.js"></script>
+  <script src="js/quizBank.js"></script>
+  <script src="js/quizService.js"></script>
   <script src="js/engine.js"></script>
   <script>
     document.addEventListener('dsaquest_ready', () => {
@@ -250,16 +252,28 @@
         if (!result) return;
         row.classList.remove('completed');
         Toast.info(`Uncompleted: ${result.subtopic.name}`);
+        finishToggleSubtopic(id, row, false, result);
       } else {
-        result = Engine.completeSubtopic(id);
-        if (!result) return;
-        row.classList.add('completed');
-        Toast.xp(result.xpEarned, result.bonusXP);
-        if (result.streakMilestone) Toast.streak(result.streak.current, result.bonusXP);
-        result.newBadges.forEach(b => setTimeout(() => Toast.badge(b), 800));
-        if (result.leveledUp) setTimeout(() => LevelUpOverlay.show(result.newLevel), 1500);
-      }
+        const subtopic = DSA_DATA.allSubtopics.find(s => s.id === id);
+        if (!subtopic) return;
 
+        const onPass = () => {
+          result = Engine.completeSubtopic(id);
+          if (!result) return;
+          row.classList.add('completed');
+          Toast.xp(result.xpEarned, result.bonusXP);
+          if (result.streakMilestone) Toast.streak(result.streak.current, result.bonusXP);
+          result.newBadges.forEach(b => setTimeout(() => Toast.badge(b), 800));
+          if (result.leveledUp) setTimeout(() => LevelUpOverlay.show(result.newLevel), 1500);
+          
+          finishToggleSubtopic(id, row, true, result);
+        };
+
+        QuizEngine.initQuiz(id, subtopic.name, subtopic.xp, onPass);
+      }
+    }
+
+    function finishToggleSubtopic(id, row, isDone, result) {
       // Apply filter hide
       if (shouldHideSubtopic({ ...result.subtopic, id }, !isDone)) {
         row.style.display = 'none';
