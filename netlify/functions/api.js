@@ -273,7 +273,7 @@ exports.handler = async (event, context) => {
       
       // Fetch global top 100
       const globalUsers = await User.find({})
-        .select('name avatar xp')
+        .select('uid name avatar xp')
         .sort({ xp: -1 })
         .limit(100);
         

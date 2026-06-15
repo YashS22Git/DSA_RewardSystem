@@ -116,7 +116,7 @@
     <header class="page-header">
       <div>
         <div class="page-title">🏆 Leaderboard</div>
-        <div class="page-subtitle">Compete with your squad — rankings update in real time</div>
+        <div class="page-subtitle">Overall standings of all warriors on the platform</div>
       </div>
       <div class="header-actions">
         <a href="squad.html" class="btn btn-cyan">⚔️ Manage Squad</a>
@@ -124,37 +124,16 @@
     </header>
 
     <div class="page-body">
-      <!-- Tab Bar -->
-      <div class="tabs mb-20 fade-in">
-        <button class="tab-btn active" id="tab-squad" onclick="switchTab('squad')">⚔️ Squad</button>
-        <button class="tab-btn" id="tab-global" onclick="switchTab('global')">🌏 Global Top 100</button>
-      </div>
+      <!-- Weekly Winner / Spotlight -->
+      <div class="weekly-winner fade-in" id="weekly-winner"></div>
 
-      <!-- SQUAD TAB -->
-      <div class="tab-panel active" id="panel-squad">
-        <!-- Header Card -->
-        <div class="lb-header-card fade-in mb-20" id="squad-header"></div>
+      <!-- Global Podium -->
+      <div id="podium-section" class="fade-in-delay-1" style="margin-bottom:20px;"></div>
 
-        <!-- Podium -->
-        <div id="podium-section" class="fade-in-delay-1"></div>
-
-        <!-- Leaderboard List -->
-        <div class="card fade-in-delay-2">
-          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
-            <span>All Members</span>
-            <span id="squad-count" style="font-size:12px;color:var(--text-secondary);font-family:normal;font-weight:400;text-transform:none;letter-spacing:0;"></span>
-          </div>
-          <div id="squad-list"></div>
-        </div>
-      </div>
-
-      <!-- GLOBAL TAB -->
-      <div class="tab-panel" id="panel-global">
-        <div class="weekly-winner fade-in" id="weekly-winner"></div>
-        <div class="card fade-in-delay-1">
-          <div class="card-title">🌏 Global Rankings (Demo)</div>
-          <div id="global-list"></div>
-        </div>
+      <!-- Leaderboard List -->
+      <div class="card fade-in-delay-2">
+        <div class="card-title">🌏 Global Rankings</div>
+        <div id="global-list"></div>
       </div>
     </div>
   </main>
@@ -165,9 +144,6 @@
   <script src="js/data.js"></script>
   <script src="js/engine.js"></script>
   <script>
-    let squadName = "Demo Squad";
-    let squadCode = "DEMO01";
-    let squadMembers = [];
     let globalList = [];
 
     async function fetchLeaderboardData() {
@@ -179,9 +155,6 @@
         });
         if (res.ok) {
           const data = await res.json();
-          squadName = data.squadName || "Demo Squad";
-          squadCode = data.squadCode || "DEMO01";
-          squadMembers = data.squadMembers || [];
           globalList = data.globalList || [];
         }
       } catch (err) {
@@ -192,117 +165,65 @@
     document.addEventListener('dsaquest_ready', async () => {
       document.getElementById('nav-placeholder').innerHTML = buildNav('leaderboard');
       await fetchLeaderboardData();
-      renderSquad();
+      renderGlobal();
     });
 
-    // Build full member list (demo friends + you)
-    function buildSquadMembers() {
-      const summary = Engine.getSummary();
-      const { profile, completedCount, streak } = summary;
+    function renderGlobal() {
+      const profile = Engine.getProfile();
       const xp = profile.xp;
 
-      const you = {
-        name: profile.name,
-        avatar: profile.avatar,
-        xp,
-        streak: streak.current,
-        completed: completedCount,
-        total: DSA_DATA.totalSubtopics,
-        isYou: true,
-        level: Engine.getLevelForXP(xp),
-      };
+      // Simulated global players fallback if database is empty/new
+      const globalNames = [
+        {name:'AlgoMaster99',avatar:'🧠',xp:18700},
+        {name:'CodeNinja_X',avatar:'⚡',xp:17200},
+        {name:'DSA_Sensei',avatar:'🎓',xp:15800},
+        {name:'PixelWarrior',avatar:'🛡️',xp:14300},
+        {name:'ByteHunter',avatar:'🔮',xp:13100},
+        {name:'QuantumCoder',avatar:'🌀',xp:12400},
+        {name:'NullPointer',avatar:'🔗',xp:11800},
+        {name:'HeapMaster',avatar:'⛰️',xp:11200},
+        {name:'TreeWalker',avatar:'🌲',xp:10500},
+        {name:'GraphGuru',avatar:'🕸️',xp:9800},
+        {name:'SortingHat',avatar:'🎩',xp:9100},
+        {name:'RecurMancer',avatar:'🔄',xp:8400},
+        {name:'DPWizard',avatar:'🧙',xp:7700},
+        {name:'BitFlip',avatar:'⚙️',xp:7100},
+        {name:'Arjun Sharma',avatar:'⚔️',xp:6800},
+        {name:'HashQueen',avatar:'#️⃣',xp:6200},
+        {name:'StackAttack',avatar:'📚',xp:5700},
+        {name:'QueueKing',avatar:'🔮',xp:5100},
+        {name:'LinkedLegend',avatar:'🔗',xp:4600},
+        {name:'Priya Patel',avatar:'🌟',xp:4200},
+      ];
 
-      const members = DSA_DATA.demoMembers.map(m => ({
-        ...m,
-        level: Engine.getLevelForXP(m.xp),
-      }));
-
-      // Insert you into sorted list
-      const all = [...members, you].sort((a, b) => b.xp - a.xp);
-      return all;
-    }
-
-    function getLevelColor(lvl) { return lvl?.color || '#94a3b8'; }
-
-    function renderSquad() {
-      const squad = Engine.getSquad();
-      
-      // If NOT in a squad, show the "Join/Create Squad" CTA
-      if (!squad) {
-        document.getElementById('squad-header').style.display = 'none';
-        document.getElementById('podium-section').style.display = 'none';
-        document.getElementById('squad-count').textContent = '';
-        
-        document.getElementById('squad-list').innerHTML = `
-          <div class="card card-glow-cyan" style="text-align:center;padding:40px;margin-bottom:20px;">
-            <div style="font-size:48px;margin-bottom:16px;">⚔️</div>
-            <div style="font-size:22px;font-weight:700;margin-bottom:8px;">You are not in a Squad yet!</div>
-            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto;">
-              Squads allow you to team up with your friends, share a code, and track each other's DSA placement prep progress in real-time. Don't prep alone!
-            </div>
-            <a href="squad.html" class="btn btn-primary btn-lg">Create or Join a Squad 🚀</a>
-          </div>
-        `;
-        return;
-      }
-
-      // Ensure headers/podiums are visible when in a squad
-      document.getElementById('squad-header').style.display = 'flex';
-      document.getElementById('podium-section').style.display = 'block';
-
-      // Map squad members
-      let members = [];
-      if (squadMembers.length === 0) {
-        const summary = Engine.getSummary();
-        members = [{
-          name: summary.profile.name,
-          avatar: summary.profile.avatar,
-          xp: summary.profile.xp,
-          streak: summary.streak.current,
-          completed: summary.completedCount,
-          total: DSA_DATA.totalSubtopics,
-          isYou: true,
-          level: Engine.getLevelForXP(summary.profile.xp)
-        }];
+      let allGlobal = [];
+      if (globalList.length === 0) {
+        allGlobal = [...globalNames, {name: profile.name, avatar: profile.avatar, xp, isYou: true}]
+          .sort((a,b) => b.xp - a.xp)
+          .slice(0, 30);
       } else {
         const summary = Engine.getSummary();
-        members = squadMembers.map((m) => ({
-          ...m,
-          isYou: m.name === summary.profile.name,
-          total: DSA_DATA.totalSubtopics,
-          level: Engine.getLevelForXP(m.xp)
-        })).sort((a, b) => b.xp - a.xp);
+        allGlobal = globalList.map(u => ({
+          name: u.name,
+          avatar: u.avatar,
+          xp: u.xp,
+          isYou: u.name === summary.profile.name || u.isYou
+        })).sort((a,b) => b.xp - a.xp);
       }
-      
-      const youIdx = members.findIndex(m => m.isYou);
 
-      // Header
-      document.getElementById('squad-header').innerHTML = `
+      // Render Weekly Winner Section
+      const champion = allGlobal[0] || { name: 'AlgoMaster99', avatar: '🧠', xp: 18700 };
+      document.getElementById('weekly-winner').innerHTML = `
+        <div style="font-size:36px;">🏆</div>
         <div>
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;">Current Squad</div>
-          <div style="font-size:22px;font-weight:700;margin-top:4px;">${squad.name}</div>
-          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">Code: <span class="text-cyan font-orbitron">${squad.code}</span></div>
-        </div>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;">
-          <div style="text-align:center;">
-            <div style="font-size:28px;font-weight:700;font-family:'Orbitron',sans-serif;color:var(--gold);">${members.length}</div>
-            <div style="font-size:12px;color:var(--text-secondary);">Members</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:28px;font-weight:700;font-family:'Orbitron',sans-serif;color:var(--cyan);">${youIdx !== -1 ? '#' + (youIdx + 1) : '-'}</div>
-            <div style="font-size:12px;color:var(--text-secondary);">Your Rank</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:28px;font-weight:700;font-family:'Orbitron',sans-serif;color:var(--purple-light);">${members.reduce((a,m)=>a+m.xp,0).toLocaleString()}</div>
-            <div style="font-size:12px;color:var(--text-secondary);">Squad XP</div>
-          </div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;">Current Champion</div>
+          <div style="font-size:18px;font-weight:700;margin-top:2px;">${champion.name} ${champion.avatar}</div>
+          <div style="font-size:13px;color:var(--text-secondary);">${champion.xp.toLocaleString()} total XP · Leading the arena!</div>
         </div>
       `;
 
-      document.getElementById('squad-count').textContent = `${members.length} members`;
-
-      // Podium (top 3)
-      const top3 = members.slice(0, 3);
+      // Render Podium Section (Top 3)
+      const top3 = allGlobal.slice(0, 3);
       let podiumOrder = [];
       let heights = [];
       let colors = [];
@@ -321,7 +242,7 @@
         colors = ['var(--gold)', '#94a3b8'];
         bgs = ['rgba(251,191,36,0.1)', 'rgba(148,163,184,0.1)'];
         nums = [1, 2];
-      } else {
+      } else if (top3.length >= 3) {
         podiumOrder = [top3[1], top3[0], top3[2]];
         heights = ['90px', '120px', '70px'];
         colors = ['#94a3b8', 'var(--gold)', '#b45309'];
@@ -351,119 +272,7 @@
         </div>
       `;
 
-      // Full list
-      const rankIcons = ['🥇', '🥈', '🥉'];
-      let listHtml = members.map((m, i) => {
-        const rank = i + 1;
-        const rankClass = rank === 1 ? 'gold-rank' : rank === 2 ? 'silver-rank' : rank === 3 ? 'bronze-rank' : '';
-        const pct = Math.round((m.completed / m.total) * 100);
-        return `
-          <div class="leaderboard-row ${rankClass} ${m.isYou ? 'you-row' : ''}">
-            <div class="rank-num rank-${rank}" style="${rank > 3 ? 'color:var(--text-secondary)' : ''}">
-              ${rank <= 3 ? rankIcons[rank-1] : rank}
-            </div>
-            <div class="lb-avatar" style="background:${getLevelColor(m.level)}22;border-color:${getLevelColor(m.level)}44;font-size:20px;">
-              ${m.avatar}
-            </div>
-            <div class="lb-info">
-              <div class="lb-name">
-                ${m.name}
-                ${m.isYou ? '<span class="you-tag">YOU</span>' : ''}
-              </div>
-              <div class="lb-level" style="color:${getLevelColor(m.level)}">Lv.${m.level?.level} ${m.level?.title}</div>
-            </div>
-            <div class="lb-stats">
-              <div class="lb-stat">
-                <div class="lb-stat-value text-gold">${m.xp.toLocaleString()}</div>
-                <div class="lb-stat-label">XP</div>
-              </div>
-              <div class="lb-stat">
-                <div class="lb-stat-value" style="color:#fb923c">${m.streak}🔥</div>
-                <div class="lb-stat-label">Streak</div>
-              </div>
-              <div class="lb-stat">
-                <div class="lb-stat-value text-cyan">${pct}%</div>
-                <div class="lb-stat-label">Done</div>
-              </div>
-              <div class="lb-stat" style="min-width:80px;">
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px;">${m.completed}/${m.total}</div>
-                <div class="xp-bar-container" style="height:6px;width:80px;">
-                  <div class="xp-bar-fill" style="width:${pct}%;height:6px;background:${getLevelColor(m.level)}"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      if (members.length === 1) {
-        listHtml += `
-          <div style="text-align:center;padding:20px;border:1px dashed var(--border);border-radius:var(--radius);margin-top:16px;">
-            <div style="font-size:14px;font-weight:600;color:var(--cyan);margin-bottom:6px;">You are the only warrior in this squad!</div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Share your squad code with friends to compete together:</div>
-            <div class="squad-code" style="font-size:20px;padding:8px 16px;display:inline-block;margin-bottom:12px;">${squad.code}</div>
-            <div>
-              <a href="squad.html" class="btn btn-sm btn-primary">Invite Friends ⚔️</a>
-            </div>
-          </div>
-        `;
-      }
-
-      document.getElementById('squad-list').innerHTML = listHtml;
-    }
-
-    function renderGlobal() {
-      const profile = Engine.getProfile();
-      const xp = profile.xp;
-
-      // Simulated global players
-      const globalNames = [
-        {n:'AlgoMaster99',a:'🧠',xp:18700},
-        {n:'CodeNinja_X',a:'⚡',xp:17200},
-        {n:'DSA_Sensei',a:'🎓',xp:15800},
-        {n:'PixelWarrior',a:'🛡️',xp:14300},
-        {n:'ByteHunter',a:'🔮',xp:13100},
-        {n:'QuantumCoder',a:'🌀',xp:12400},
-        {n:'NullPointer',a:'🔗',xp:11800},
-        {n:'HeapMaster',a:'⛰️',xp:11200},
-        {n:'TreeWalker',a:'🌲',xp:10500},
-        {n:'GraphGuru',a:'🕸️',xp:9800},
-        {n:'SortingHat',a:'🎩',xp:9100},
-        {n:'RecurMancer',a:'🔄',xp:8400},
-        {n:'DPWizard',a:'🧙',xp:7700},
-        {n:'BitFlip',a:'⚙️',xp:7100},
-        {n:'Arjun Sharma',a:'⚔️',xp:6800},
-        {n:'HashQueen',a:'#️⃣',xp:6200},
-        {n:'StackAttack',a:'📚',xp:5700},
-        {n:'QueueKing',a:'🔮',xp:5100},
-        {n:'LinkedLegend',a:'🔗',xp:4600},
-        {n:'Priya Patel',a:'🌟',xp:4200},
-      ];
-
-      // Insert the user at appropriate rank
-      let allGlobal = [];
-      if (globalList.length === 0) {
-        allGlobal = [...globalNames, {n: profile.name, a: profile.avatar, xp, isYou: true}]
-          .sort((a,b) => b.xp - a.xp)
-          .slice(0, 30);
-      } else {
-        allGlobal = globalList.map(u => ({
-          n: u.name,
-          a: u.avatar,
-          xp: u.xp,
-          isYou: u.isYou
-        }));
-      }
-
-      document.getElementById('weekly-winner').innerHTML = `
-        <div style="font-size:36px;">🏆</div>
-        <div>
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;">This Week's Champion</div>
-          <div style="font-size:18px;font-weight:700;margin-top:2px;">AlgoMaster99 🧠</div>
-          <div style="font-size:13px;color:var(--text-secondary);">+2,340 XP earned this week · 14-day streak</div>
-        </div>
-      `;
-
+      // Render List View
       const rankIcons = ['🥇','🥈','🥉'];
       document.getElementById('global-list').innerHTML = allGlobal.map((m, i) => {
         const rank = i + 1;
@@ -472,9 +281,9 @@
         return `
           <div class="global-row ${m.isYou ? 'you' : ''}">
             <div class="global-rank ${rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':''}">${rankDisplay}</div>
-            <div class="global-avatar" style="background:${levelInfo.color}22;border-color:${levelInfo.color}44">${m.a}</div>
+            <div class="global-avatar" style="background:${levelInfo.color}22;border-color:${levelInfo.color}44">${m.avatar}</div>
             <div class="global-name">
-              ${m.n} ${m.isYou ? '<span class="you-tag">YOU</span>' : ''}
+              ${m.name} ${m.isYou ? '<span class="you-tag">YOU</span>' : ''}
               <div style="font-size:11px;color:${levelInfo.color};font-weight:500;">Lv.${levelInfo.level} ${levelInfo.title}</div>
             </div>
             <div class="global-xp">${m.xp.toLocaleString()} XP</div>
@@ -482,15 +291,6 @@
         `;
       }).join('');
     }
-
-    function switchTab(tab) {
-      document.getElementById('panel-squad').classList.toggle('active', tab === 'squad');
-      document.getElementById('panel-global').classList.toggle('active', tab === 'global');
-      document.getElementById('tab-squad').classList.toggle('active', tab === 'squad');
-      document.getElementById('tab-global').classList.toggle('active', tab === 'global');
-      if (tab === 'global') renderGlobal();
-    }
-
   </script>
 </body>
 </html>
