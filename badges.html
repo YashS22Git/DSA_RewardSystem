@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSA Quest — Badges</title>
+  <meta name="description" content="View all 20 DSA Quest badges. Earn them by completing topics, streaks, and milestones." />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .badges-summary {
+      background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(124,58,237,0.08));
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: var(--radius-xl);
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .badge-progress-ring {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+    }
+
+    .badge-progress-ring svg { transform: rotate(-90deg); }
+
+    .ring-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring-num {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .ring-label { font-size: 9px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+    .badge-categories {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .badge-cat-btn {
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .badge-cat-btn.active {
+      background: var(--purple-dim);
+      color: var(--purple-light);
+      border-color: rgba(124,58,237,0.4);
+    }
+
+    .badge-card {
+      position: relative;
+    }
+
+    .badge-card::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, var(--gold), var(--purple-light));
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .badge-card.unlocked::after { opacity: 0.3; }
+
+    .badge-progress-bar {
+      margin-top: 8px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 99px;
+      height: 4px;
+      overflow: hidden;
+    }
+
+    .badge-progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--purple), var(--gold));
+    }
+
+    /* Badge detail modal */
+    .badge-detail-emoji { font-size: 64px; text-align: center; display: block; margin: 0 auto 16px; }
+    .badge-detail-name { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    .badge-detail-desc { font-size: 14px; color: var(--text-secondary); text-align: center; }
+    .badge-detail-status {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .badge-detail-status.unlocked { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+    .badge-detail-status.locked { background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div>
+        <div class="page-title">🎖️ Badges</div>
+        <div class="page-subtitle">Complete challenges to unlock all 20 badges</div>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <!-- Summary -->
+      <div class="badges-summary fade-in mb-20" id="badges-summary"></div>
+
+      <!-- Category Filter -->
+      <div class="badge-categories fade-in-delay-1" id="badge-categories">
+        <button class="badge-cat-btn active" onclick="filterBadges('all', this)">All Badges</button>
+        <button class="badge-cat-btn" onclick="filterBadges('unlocked', this)">✅ Unlocked</button>
+        <button class="badge-cat-btn" onclick="filterBadges('locked', this)">🔒 Locked</button>
+        <button class="badge-cat-btn" onclick="filterBadges('streak', this)">🔥 Streak</button>
+        <button class="badge-cat-btn" onclick="filterBadges('chapter', this)">📖 Chapter</button>
+        <button class="badge-cat-btn" onclick="filterBadges('special', this)">⚡ Special</button>
+      </div>
+
+      <!-- Badge Grid -->
+      <div class="badge-grid fade-in-delay-2" id="badge-grid"></div>
+    </div>
+  </main>
+
+  <!-- Badge Detail Modal -->
+  <div class="modal-overlay" id="badge-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Badge Details</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div id="badge-modal-content"></div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script>
+    document.addEventListener('dsaquest_ready', () => {
+      document.getElementById('nav-placeholder').innerHTML = buildNav('badges');
+      renderSummary();
+      renderBadges();
+    });
+
+    const BADGE_CATEGORIES = {
+      streak: ['on_fire','week_warrior','month_master','perfect_week'],
+      chapter: ['array_ace','string_slayer','graph_god','dp_destroyer','tree_tamer','halfway_hero','dsa_king','mock_slayer'],
+      special: ['speed_runner','night_owl','early_bird','comeback_kid','xp_hoarder','lb_crusher','first_blood','legend'],
+    };
+
+    let currentFilter = 'all';
+
+    function renderSummary() {
+      const badges = Engine.getBadges();
+      const total = DSA_DATA.badges.length;
+      const earned = Object.keys(badges).length;
+      const pct = Math.round((earned / total) * 100);
+      const circumference = 2 * Math.PI * 30;
+      const dashOffset = circumference - (pct / 100) * circumference;
+
+      document.getElementById('badges-summary').innerHTML = `
+        <div class="badge-progress-ring">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+            <circle cx="40" cy="40" r="30" fill="none"
+              stroke="url(#goldGrad)" stroke-width="8"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${dashOffset}"
+              stroke-linecap="round"
+              style="transition:stroke-dashoffset 1s ease"/>
+            <defs>
+              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#7c3aed"/>
+                <stop offset="100%" stop-color="#fbbf24"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="ring-text">
+            <div class="ring-num">${earned}</div>
+            <div class="ring-label">/ ${total}</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:26px;font-weight:800;font-family:'Orbitron',sans-serif;color:var(--gold)">${pct}%</div>
+          <div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">Badges collected</div>
+          <div style="font-size:13px;margin-top:8px;">
+            ${earned === total
+              ? '<span style="color:var(--green);font-weight:700;">🌠 All badges unlocked! You\'re a Legend!</span>'
+              : `<span style="color:var(--text-secondary);">${total - earned} badges remaining to unlock</span>`}
+          </div>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">Progress to Legend</div>
+          <div class="xp-bar-container" style="height:10px;">
+            <div class="xp-bar-fill gold" style="width:${pct}%;height:10px;"></div>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;">
+            ${earned}/${total} badges · ${DSA_DATA.badges.filter(b => !badges[b.id]).slice(0,3).map(b=>b.icon).join(' ')} up next
+          </div>
+        </div>
+      `;
+    }
+
+    function getBadgeProgress(badge) {
+      const profile = Engine.getProfile();
+      const streak = Engine.getStreak();
+      const completed = Engine.getCompletedCount();
+      const total = DSA_DATA.totalSubtopics;
+
+      // Per-badge progress hints
+      if (badge.id === 'on_fire') return { pct: Math.min(100, Math.round((streak.current/3)*100)), hint: `${streak.current}/3 days` };
+      if (badge.id === 'week_warrior') return { pct: Math.min(100, Math.round((streak.current/7)*100)), hint: `${streak.current}/7 days` };
+      if (badge.id === 'month_master') return { pct: Math.min(100, Math.round((streak.current/30)*100)), hint: `${streak.current}/30 days` };
+      if (badge.id === 'xp_hoarder') return { pct: Math.min(100, Math.round((profile.xp/2000)*100)), hint: `${profile.xp}/2000 XP` };
+      if (badge.id === 'halfway_hero') return { pct: Math.min(100, Math.round((completed/(total/2))*100)), hint: `${completed}/${Math.ceil(total/2)} topics` };
+      if (badge.id === 'dsa_king') return { pct: Math.min(100, Math.round((completed/total)*100)), hint: `${completed}/${total} topics` };
+      if (badge.id === 'first_blood') return { pct: completed > 0 ? 100 : 0, hint: completed > 0 ? 'Done!' : '0/1 topics' };
+
+      // Chapter badges
+      const chMap = { array_ace:'arrays', string_slayer:'strings', graph_god:'graphs', dp_destroyer:'dynamic_programming', tree_tamer:'trees' };
+      if (chMap[badge.id]) {
+        const prog = Engine.getChapterProgress(chMap[badge.id]);
+        return { pct: prog.pct, hint: `${prog.done}/${prog.total} topics` };
+      }
+      return { pct: 0, hint: '' };
+    }
+
+    function getCatForBadge(id) {
+      for (const [cat, ids] of Object.entries(BADGE_CATEGORIES)) {
+        if (ids.includes(id)) return cat;
+      }
+      return 'special';
+    }
+
+    function renderBadges(filter = 'all') {
+      const badges = Engine.getBadges();
+      const grid = document.getElementById('badge-grid');
+
+      let shown = DSA_DATA.badges;
+      if (filter === 'unlocked') shown = shown.filter(b => badges[b.id]);
+      if (filter === 'locked') shown = shown.filter(b => !badges[b.id]);
+      if (['streak','chapter','special'].includes(filter)) shown = shown.filter(b => getCatForBadge(b.id) === filter);
+
+      if (shown.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">No badges found for this filter.</div>';
+        return;
+      }
+
+      grid.innerHTML = shown.map(badge => {
+        const isUnlocked = !!badges[badge.id];
+        const prog = isUnlocked ? { pct: 100, hint: 'Completed!' } : getBadgeProgress(badge);
+        const unlockDate = isUnlocked ? new Date(badges[badge.id]).toLocaleDateString('en-IN') : null;
+
+        return `
+          <div class="badge-card ${isUnlocked ? 'unlocked' : 'locked'}" onclick="showBadgeDetail('${badge.id}')">
+            ${isUnlocked ? '<div class="badge-glow"></div>' : ''}
+            <span class="badge-emoji">${badge.icon}</span>
+            <div class="badge-name">${badge.name}</div>
+            <div class="badge-desc">${badge.desc}</div>
+            ${isUnlocked
+              ? `<div class="badge-date">✅ ${unlockDate}</div>`
+              : prog.pct > 0
+                ? `<div class="badge-progress-bar"><div class="badge-progress-fill" style="width:${prog.pct}%"></div></div>
+                   <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${prog.hint}</div>`
+                : `<div style="font-size:10px;color:var(--text-muted);margin-top:6px;">🔒 Locked</div>`
+            }
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterBadges(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.badge-cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderBadges(filter);
+    }
+
+    function showBadgeDetail(id) {
+      const badge = DSA_DATA.badges.find(b => b.id === id);
+      if (!badge) return;
+      const isUnlocked = Engine.hasBadge(id);
+      const badges = Engine.getBadges();
+      const prog = isUnlocked ? { pct: 100, hint: 'Completed!' } : getBadgeProgress(badge);
+
+      document.getElementById('badge-modal-content').innerHTML = `
+        <span class="badge-detail-emoji">${badge.icon}</span>
+        <div class="badge-detail-name">${badge.name}</div>
+        <div class="badge-detail-desc">${badge.desc}</div>
+        ${!isUnlocked && prog.pct > 0 ? `
+          <div style="margin-top:16px;">
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;text-align:center;">${prog.hint}</div>
+            <div class="xp-bar-container" style="height:8px;"><div class="xp-bar-fill" style="width:${prog.pct}%;height:8px;background:linear-gradient(90deg,var(--purple),var(--gold))"></div></div>
+          </div>
+        ` : ''}
+        <div class="badge-detail-status ${isUnlocked ? 'unlocked' : 'locked'}">
+          ${isUnlocked
+            ? `🏆 Unlocked on ${new Date(badges[id]).toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})}`
+            : `🔒 Not yet unlocked`}
+        </div>
+      `;
+      document.getElementById('badge-modal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('badge-modal').classList.remove('show');
+    }
+
+    document.getElementById('badge-modal').addEventListener('click', e => {
+      if (e.target === document.getElementById('badge-modal')) closeModal();
+    });
+
+  </script>
+</body>
+</html>

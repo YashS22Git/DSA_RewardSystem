@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSA Quest — Roadmap</title>
+  <meta name="description" content="Full 30-day DSA roadmap with XP tracking, subtopic checkboxes, and chapter progress." />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .roadmap-header-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      flex-wrap: wrap;
+    }
+    .roadmap-stat { text-align: center; padding: 0 16px; border-right: 1px solid var(--border); }
+    .roadmap-stat:last-child { border-right: none; }
+    .roadmap-stat-val { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 700; }
+    .roadmap-stat-label { font-size: 11px; color: var(--text-secondary); }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .chapter-card.boss-chapter {
+      border-color: rgba(239,68,68,0.3);
+      background: linear-gradient(to right, var(--bg-card), rgba(239,68,68,0.03));
+    }
+    .chapter-card.boss-chapter .chapter-header { border-left: 3px solid var(--red); padding-left: 17px; }
+
+    .all-done-chapter { opacity: 0.7; }
+    .all-done-chapter .chapter-icon { filter: grayscale(0.3); }
+
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 14px;
+    }
+    .search-box input {
+      background: none; border: none; outline: none;
+      color: var(--text-primary); font-family: 'Inter', sans-serif;
+      font-size: 14px; width: 180px;
+    }
+    .search-box input::placeholder { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div>
+        <div class="page-title">📍 30-Day Roadmap</div>
+        <div class="page-subtitle">Complete subtopics to earn XP and unlock badges</div>
+      </div>
+      <div class="header-actions">
+        <div class="search-box">
+          <span style="color:var(--text-muted)">🔍</span>
+          <input type="text" id="search-input" placeholder="Search topics…" oninput="filterTopics(this.value)" />
+        </div>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <!-- Progress Summary -->
+      <div class="roadmap-header-bar mb-20 fade-in" id="roadmap-stats"></div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar mb-20 fade-in-delay-1">
+        <span style="font-size:12px;color:var(--text-muted);font-weight:600;">FILTER:</span>
+        <button class="btn btn-sm filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
+        <button class="btn btn-sm filter-btn" data-filter="pending" onclick="setFilter('pending', this)">Pending</button>
+        <button class="btn btn-sm filter-btn" data-filter="done" onclick="setFilter('done', this)">Completed</button>
+        <button class="btn btn-sm filter-btn" data-filter="easy" onclick="setFilter('easy', this)">Easy</button>
+        <button class="btn btn-sm filter-btn" data-filter="medium" onclick="setFilter('medium', this)">Medium</button>
+        <button class="btn btn-sm filter-btn" data-filter="hard" onclick="setFilter('hard', this)">Hard</button>
+        <button class="btn btn-sm filter-btn" data-filter="boss" onclick="setFilter('boss', this)">Boss 💀</button>
+      </div>
+
+      <!-- Chapters -->
+      <div id="chapters-container"></div>
+    </div>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script>
+    document.addEventListener('dsaquest_ready', () => {
+      document.getElementById('nav-placeholder').innerHTML = buildNav('roadmap');
+      renderStats();
+      renderChapters();
+    });
+
+    let currentFilter = 'all';
+    let searchQuery = '';
+
+    function renderStats() {
+      const summary = Engine.getSummary();
+      const { profile, completedCount, totalSubtopics, pctComplete, levelProgress } = summary;
+      document.getElementById('roadmap-stats').innerHTML = `
+        <div class="roadmap-stat">
+          <div class="roadmap-stat-val text-cyan">${completedCount}</div>
+          <div class="roadmap-stat-label">Topics Done</div>
+        </div>
+        <div class="roadmap-stat">
+          <div class="roadmap-stat-val text-secondary">${totalSubtopics}</div>
+          <div class="roadmap-stat-label">Total Topics</div>
+        </div>
+        <div class="roadmap-stat">
+          <div class="roadmap-stat-val text-green">${pctComplete}%</div>
+          <div class="roadmap-stat-label">Complete</div>
+        </div>
+        <div class="roadmap-stat">
+          <div class="roadmap-stat-val text-gold">${profile.xp.toLocaleString()}</div>
+          <div class="roadmap-stat-label">Total XP</div>
+        </div>
+        <div class="roadmap-stat" style="flex:1;min-width:200px;border-right:none;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-bottom:6px;">
+            <span>Level ${levelProgress.current.level} — ${levelProgress.current.title}</span>
+            <span>${levelProgress.pct}%</span>
+          </div>
+          <div class="xp-bar-container"><div class="xp-bar-fill" style="width:${levelProgress.pct}%"></div></div>
+        </div>
+      `;
+    }
+
+    function renderChapters() {
+      const progress = Engine.getProgress();
+      const container = document.getElementById('chapters-container');
+
+      container.innerHTML = DSA_DATA.chapters.map((ch, idx) => {
+        const prog = Engine.getChapterProgress(ch.id);
+        const allDone = prog.pct === 100;
+        const isBoss = ch.isBoss;
+
+        const chapterVisible = shouldShowChapter(ch, progress);
+        const displayNone = chapterVisible ? '' : 'display:none;';
+
+        return `
+          <div class="chapter-card ${isBoss ? 'boss-chapter' : ''} ${allDone ? 'all-done-chapter' : ''} fade-in"
+               id="ch-card-${ch.id}" style="${displayNone}">
+            <div class="chapter-header" onclick="toggleChapter('${ch.id}')">
+              <div class="chapter-icon" style="background:${ch.color}22;">
+                ${allDone ? '✅' : ch.icon}
+              </div>
+              <div class="chapter-info">
+                <div class="chapter-name">
+                  ${isBoss ? '<span style="color:var(--red);font-size:11px;font-weight:700;letter-spacing:0.05em;">⚠️ BOSS · </span>' : ''}
+                  Chapter ${idx + 1} — ${ch.name}
+                </div>
+                <div class="chapter-meta">
+                  Days ${ch.days} &nbsp;·&nbsp;
+                  ${prog.done}/${prog.total} topics &nbsp;·&nbsp;
+                  ${ch.days_data.flatMap(d => d.subtopics).reduce((a, s) => a + s.xp, 0)} total XP
+                  ${ch.badge ? `&nbsp;·&nbsp; <span style="color:var(--gold);">${DSA_DATA.badges.find(b => b.id === ch.badge)?.icon} Badge available</span>` : ''}
+                </div>
+              </div>
+              <div class="chapter-progress-wrap">
+                <div class="chapter-progress-label">
+                  <span style="color:${ch.color}">${prog.pct}%</span>
+                  <span>${prog.done}/${prog.total}</span>
+                </div>
+                <div class="xp-bar-container">
+                  <div class="xp-bar-fill" style="width:${prog.pct}%;background:linear-gradient(90deg,${ch.color}88,${ch.color})"></div>
+                </div>
+              </div>
+              <div class="chapter-chevron">▼</div>
+            </div>
+            <div class="chapter-body" id="ch-body-${ch.id}">
+              ${ch.days_data.map(day => `
+                <div class="day-section" id="day-section-${ch.id}-${day.day}">
+                  <div class="day-label">
+                    <span>📅 ${day.label}</span>
+                    <span style="margin-left:auto;color:var(--text-secondary);">
+                      ${day.subtopics.filter(s => !!progress[s.id]).length}/${day.subtopics.length} done
+                    </span>
+                  </div>
+                  ${day.subtopics.map(s => {
+                    const done = !!progress[s.id];
+                    const hidden = shouldHideSubtopic(s, done) ? 'display:none;' : '';
+                    return `
+                      <div class="subtopic-row ${done ? 'completed' : ''}"
+                           id="sub-row-${s.id}" style="${hidden}"
+                           onclick="toggleSubtopic('${s.id}')">
+                        <div class="subtopic-check" id="sub-check-${s.id}"></div>
+                        <span class="subtopic-name">${s.name}</span>
+                        <span class="difficulty-badge ${diffClass(s.difficulty)}">${diffLabel(s.difficulty)}</span>
+                        <span class="xp-chip">+${s.xp} XP</span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Auto-open first incomplete chapter
+      const firstIncomplete = DSA_DATA.chapters.find(ch => Engine.getChapterProgress(ch.id).pct < 100);
+      if (firstIncomplete) toggleChapter(firstIncomplete.id, true);
+    }
+
+    function shouldShowChapter(ch, progress) {
+      if (currentFilter === 'all') return true;
+      return ch.days_data.some(d => d.subtopics.some(s => {
+        const done = !!progress[s.id];
+        if (currentFilter === 'pending') return !done;
+        if (currentFilter === 'done') return done;
+        if (['easy','medium','hard','boss'].includes(currentFilter)) return s.difficulty === currentFilter;
+        return true;
+      }));
+    }
+
+    function shouldHideSubtopic(s, done) {
+      const q = searchQuery.toLowerCase();
+      if (q && !s.name.toLowerCase().includes(q)) return true;
+      if (currentFilter === 'pending' && done) return true;
+      if (currentFilter === 'done' && !done) return true;
+      if (['easy','medium','hard','boss'].includes(currentFilter) && s.difficulty !== currentFilter) return true;
+      return false;
+    }
+
+    function toggleChapter(id, forceOpen = false) {
+      const card = document.getElementById(`ch-card-${id}`);
+      if (!card) return;
+      if (forceOpen) { card.classList.add('open'); return; }
+      card.classList.toggle('open');
+    }
+
+    function toggleSubtopic(id) {
+      const row = document.getElementById(`sub-row-${id}`);
+      const isDone = row.classList.contains('completed');
+
+      let result;
+      if (isDone) {
+        result = Engine.uncompleteSubtopic(id);
+        if (!result) return;
+        row.classList.remove('completed');
+        Toast.info(`Uncompleted: ${result.subtopic.name}`);
+      } else {
+        result = Engine.completeSubtopic(id);
+        if (!result) return;
+        row.classList.add('completed');
+        Toast.xp(result.xpEarned, result.bonusXP);
+        if (result.streakMilestone) Toast.streak(result.streak.current, result.bonusXP);
+        result.newBadges.forEach(b => setTimeout(() => Toast.badge(b), 800));
+        if (result.leveledUp) setTimeout(() => LevelUpOverlay.show(result.newLevel), 1500);
+      }
+
+      // Apply filter hide
+      if (shouldHideSubtopic({ ...result.subtopic, id }, !isDone)) {
+        row.style.display = 'none';
+      }
+
+      // Update day section completed counts
+      let foundCh = null;
+      let foundDay = null;
+      for (const ch of DSA_DATA.chapters) {
+        for (const d of ch.days_data) {
+          if (d.subtopics.some(s => s.id === id)) {
+            foundCh = ch;
+            foundDay = d;
+            break;
+          }
+        }
+        if (foundCh) break;
+      }
+      if (foundCh && foundDay) {
+        const progress = Engine.getProgress();
+        const doneCount = foundDay.subtopics.filter(s => !!progress[s.id]).length;
+        const totalCount = foundDay.subtopics.length;
+        const dayLabelSpan = document.querySelector(`#day-section-${foundCh.id}-${foundDay.day} .day-label span:last-child`);
+        if (dayLabelSpan) {
+          dayLabelSpan.textContent = `${doneCount}/${totalCount} done`;
+        }
+      }
+
+      // Update chapter progress bars
+      DSA_DATA.chapters.forEach(ch => {
+        const prog = Engine.getChapterProgress(ch.id);
+        const fill = document.querySelector(`#ch-card-${ch.id} .xp-bar-fill`);
+        if (fill) fill.style.width = `${prog.pct}%`;
+        const pctLabel = document.querySelector(`#ch-card-${ch.id} .chapter-progress-label span:first-child`);
+        if (pctLabel) pctLabel.textContent = `${prog.pct}%`;
+        const metaEl = document.querySelector(`#ch-card-${ch.id} .chapter-meta`);
+      });
+
+      renderStats();
+    }
+
+    function setFilter(f, btn) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'btn-primary'));
+      btn.classList.add('active');
+      reapplyFilter();
+    }
+
+    function filterTopics(q) {
+      searchQuery = q;
+      reapplyFilter();
+    }
+
+    function reapplyFilter() {
+      const progress = Engine.getProgress();
+      DSA_DATA.chapters.forEach(ch => {
+        const card = document.getElementById(`ch-card-${ch.id}`);
+        if (!card) return;
+        const visible = shouldShowChapter(ch, progress);
+        card.style.display = visible ? '' : 'none';
+
+        ch.days_data.forEach(day => {
+          day.subtopics.forEach(s => {
+            const row = document.getElementById(`sub-row-${s.id}`);
+            if (!row) return;
+            const done = !!progress[s.id];
+            row.style.display = shouldHideSubtopic(s, done) ? 'none' : '';
+          });
+        });
+      });
+    }
+
+  </script>
+</body>
+</html>

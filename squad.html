@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSA Quest — Squad</title>
+  <meta name="description" content="Create or join a DSA Quest squad to compete with friends on the leaderboard." />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .squad-hero {
+      background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(0,212,255,0.06));
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .squad-hero::before {
+      content: '⚔️';
+      position: absolute;
+      font-size: 180px;
+      opacity: 0.04;
+      left: 50%; top: 50%;
+      transform: translate(-50%,-50%);
+      pointer-events: none;
+    }
+    .squad-hero-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--purple-light), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .action-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .action-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .action-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.02), transparent);
+      pointer-events: none;
+    }
+    .action-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+    .action-card.create:hover { border-color: rgba(124,58,237,0.5); box-shadow: 0 12px 40px rgba(124,58,237,0.2); }
+    .action-card.join:hover { border-color: rgba(0,212,255,0.5); box-shadow: 0 12px 40px rgba(0,212,255,0.2); }
+
+    .action-icon { font-size: 48px; margin-bottom: 16px; }
+    .action-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .action-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+    .member-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: var(--transition);
+    }
+    .member-card:hover { border-color: rgba(124,58,237,0.3); background: var(--bg-card); }
+
+    .member-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .member-info { flex: 1; }
+    .member-name { font-size: 15px; font-weight: 700; }
+    .member-level { font-size: 12px; font-weight: 500; margin-top: 2px; }
+    .member-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+    .member-stat { text-align: center; }
+    .member-stat-val { font-size: 14px; font-weight: 700; font-family: 'Orbitron', sans-serif; }
+    .member-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .how-to-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      margin-top: 20px;
+    }
+    .how-step {
+      display: flex;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .how-step:last-child { border-bottom: none; }
+    .how-step-num {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--purple-dim);
+      border: 1px solid rgba(124,58,237,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--purple-light);
+      flex-shrink: 0;
+    }
+    .how-step-text { font-size: 14px; color: var(--text-secondary); padding-top: 5px; }
+
+    .share-section {
+      background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(124,58,237,0.06));
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .copied-feedback {
+      position: fixed;
+      bottom: 80px;
+      left: 50%; transform: translateX(-50%);
+      background: var(--green);
+      color: #000;
+      font-weight: 700;
+      padding: 10px 24px;
+      border-radius: 99px;
+      font-size: 13px;
+      z-index: 9999;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <div class="copied-feedback" id="copied-fb">✅ Code Copied!</div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div>
+        <div class="page-title">⚔️ Squad</div>
+        <div class="page-subtitle">Team up with friends and compete together</div>
+      </div>
+    </header>
+
+    <div class="page-body" id="main-body">
+      <!-- Content injected by JS -->
+    </div>
+  </main>
+
+  <!-- Create Squad Modal -->
+  <div class="modal-overlay" id="create-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">⚔️ Create a Squad</div>
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+      <label class="input-label">Squad Name</label>
+      <input type="text" id="squad-name-input" class="input-field" placeholder="e.g. Placement Warriors 2025" maxlength="40" />
+      <button class="btn btn-primary w-full" style="margin-top:20px" onclick="createSquad()">Create Squad 🚀</button>
+    </div>
+  </div>
+
+  <!-- Join Squad Modal -->
+  <div class="modal-overlay" id="join-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">🔗 Join a Squad</div>
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+      <label class="input-label">Squad Code</label>
+      <input type="text" id="join-code-input" class="input-field" placeholder="Enter 6-letter code" maxlength="6"
+        style="text-transform:uppercase;letter-spacing:0.2em;font-family:'Orbitron',sans-serif;font-size:18px;text-align:center;" />
+      <div style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center;">Ask your friend to share their squad code from the Squad page</div>
+      <button class="btn btn-cyan w-full" style="margin-top:20px" onclick="joinSquad()">Join Squad ⚔️</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script>
+    let squadMembers = [];
+    async function fetchSquadMembers() {
+      try {
+        const token = await Auth.getToken();
+        if (!token) return;
+        const res = await fetch('/api/leaderboard', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          squadMembers = data.squadMembers || [];
+        }
+      } catch (err) {
+        console.warn("Failed to fetch squad members:", err);
+      }
+    }
+
+    document.addEventListener('dsaquest_ready', async () => {
+      document.getElementById('nav-placeholder').innerHTML = buildNav('squad');
+      await fetchSquadMembers();
+      render();
+    });
+
+    async function render() {
+      const squad = Engine.getSquad();
+      const body = document.getElementById('main-body');
+
+      if (!squad) {
+        renderNoSquad(body);
+      } else {
+        renderSquadView(body, squad);
+      }
+    }
+
+    function renderNoSquad(body) {
+      body.innerHTML = `
+        <div class="squad-hero fade-in">
+          <div class="squad-hero-title">Form Your Squad ⚔️</div>
+          <div style="font-size:14px;color:var(--text-secondary);margin-top:8px;max-width:500px;margin-left:auto;margin-right:auto;">
+            Join forces with your classmates. Compete on the leaderboard. Push each other to complete DSA faster. The competitive pressure is real — and it works.
+          </div>
+        </div>
+
+        <div class="action-cards fade-in-delay-1">
+          <div class="action-card create" onclick="document.getElementById('create-modal').classList.add('show')">
+            <div class="action-icon">🚀</div>
+            <div class="action-title">Create Squad</div>
+            <div class="action-desc">Start a new squad and get a unique code to share with your friends. You become the squad leader.</div>
+            <button class="btn btn-primary" style="margin-top:16px">Create New Squad</button>
+          </div>
+          <div class="action-card join" onclick="document.getElementById('join-modal').classList.add('show')">
+            <div class="action-icon">🔗</div>
+            <div class="action-title">Join Squad</div>
+            <div class="action-desc">Got a code from a friend? Enter it here to join their squad and appear on their leaderboard.</div>
+            <button class="btn btn-cyan" style="margin-top:16px">Join Existing Squad</button>
+          </div>
+        </div>
+
+        <div class="how-to-section fade-in-delay-2">
+          <div class="card-title" style="margin-bottom:12px">🗺️ How Squads Work</div>
+          <div class="how-step">
+            <div class="how-step-num">1</div>
+            <div class="how-step-text"><strong style="color:var(--text-primary)">Create or Join</strong> — One person creates a squad and shares the 6-letter code with their group.</div>
+          </div>
+          <div class="how-step">
+            <div class="how-step-num">2</div>
+            <div class="how-step-text"><strong style="color:var(--text-primary)">Compete</strong> — Everyone's XP, streak, and progress appears on the squad leaderboard in real time.</div>
+          </div>
+          <div class="how-step">
+            <div class="how-step-num">3</div>
+            <div class="how-step-text"><strong style="color:var(--text-primary)">Get Notified</strong> — See when a squad member unlocks a badge or surpasses your rank.</div>
+          </div>
+          <div class="how-step">
+            <div class="how-step-num">4</div>
+            <div class="how-step-text"><strong style="color:var(--text-primary)">Crack Placements</strong> — The competitive pressure keeps everyone consistent until placement season.</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSquadView(body, squad) {
+      const summary = Engine.getSummary();
+      const { profile, completedCount, streak } = summary;
+      const xp = profile.xp;
+
+      let members = [];
+      if (squadMembers.length === 0) {
+        members = [
+          ...DSA_DATA.demoMembers.map(m => ({
+            ...m, level: Engine.getLevelForXP(m.xp)
+          })),
+          {
+            name: profile.name,
+            avatar: profile.avatar,
+            xp,
+            streak: streak.current,
+            completed: completedCount,
+            total: DSA_DATA.totalSubtopics,
+            isYou: true,
+            level: Engine.getLevelForXP(xp),
+          }
+        ].sort((a,b) => b.xp - a.xp);
+      } else {
+        members = squadMembers.map(m => ({
+          ...m,
+          isYou: m.name === profile.name,
+          total: DSA_DATA.totalSubtopics,
+          level: Engine.getLevelForXP(m.xp)
+        })).sort((a,b) => b.xp - a.xp);
+      }
+
+      const youIdx = members.findIndex(m => m.isYou);
+
+      body.innerHTML = `
+        <!-- Share Code -->
+        <div class="share-section fade-in">
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;">Your Squad</div>
+            <div style="font-size:20px;font-weight:700;margin-top:2px;">${squad.name}</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Squad Code</div>
+            <div class="squad-code-display" style="padding:12px 20px;display:inline-flex;align-items:center;gap:14px;">
+              <div class="squad-code" id="code-display">${squad.code}</div>
+              <button class="btn btn-ghost btn-sm" onclick="copyCode('${squad.code}')">📋 Copy</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <div style="text-align:center;padding:0 12px;border-right:1px solid var(--border)">
+              <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;color:var(--cyan)">#${youIdx+1}</div>
+              <div style="font-size:11px;color:var(--text-secondary)">Your Rank</div>
+            </div>
+            <div style="text-align:center;padding:0 12px">
+              <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;color:var(--purple-light)">${members.length}</div>
+              <div style="font-size:11px;color:var(--text-secondary)">Members</div>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="leaveSquad()">Leave Squad</button>
+        </div>
+
+        <!-- Members Grid -->
+        <div class="card fade-in-delay-1 mb-20">
+          <div class="card-title">👥 Squad Members</div>
+          <div style="display:flex;flex-direction:column;gap:10px;" id="members-list">
+            ${members.map((m, i) => {
+              const rank = i + 1;
+              const pct = Math.round((m.completed / m.total) * 100);
+              const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+              return `
+                <div class="member-card ${m.isYou ? 'card-glow-cyan' : ''}">
+                  <div style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;width:28px;text-align:center;color:${rank<=3?'var(--gold)':'var(--text-secondary)'}">${rankIcon}</div>
+                  <div class="member-avatar" style="background:${m.level.color}22;border-color:${m.level.color}44">${m.avatar}</div>
+                  <div class="member-info">
+                    <div class="member-name">
+                      ${m.name} ${m.isYou ? '<span style="font-size:10px;background:rgba(0,212,255,0.15);color:var(--cyan);border:1px solid rgba(0,212,255,0.3);padding:2px 8px;border-radius:99px;font-weight:700;">YOU</span>' : ''}
+                    </div>
+                    <div class="member-level" style="color:${m.level.color}">Lv.${m.level.level} ${m.level.title}</div>
+                    <div style="margin-top:6px;max-width:200px;">
+                      <div class="xp-bar-container" style="height:4px;">
+                        <div class="xp-bar-fill" style="width:${pct}%;height:4px;background:${m.level.color}"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="member-stats">
+                    <div class="member-stat">
+                      <div class="member-stat-val text-gold">${m.xp.toLocaleString()}</div>
+                      <div class="member-stat-label">XP</div>
+                    </div>
+                    <div class="member-stat">
+                      <div class="member-stat-val" style="color:#fb923c">${m.streak}🔥</div>
+                      <div class="member-stat-label">Streak</div>
+                    </div>
+                    <div class="member-stat">
+                      <div class="member-stat-val text-cyan">${pct}%</div>
+                      <div class="member-stat-label">Done</div>
+                    </div>
+                    <div class="member-stat">
+                      <div class="member-stat-val text-secondary">${m.completed}</div>
+                      <div class="member-stat-label">Topics</div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="card card-glow-purple fade-in-delay-2" style="text-align:center;padding:32px;">
+          <div style="font-size:36px;margin-bottom:12px;">📢</div>
+          <div style="font-size:18px;font-weight:700;margin-bottom:8px;">Invite More Warriors</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto;">
+            Share your squad code with classmates. The more competition, the more everyone grows.
+          </div>
+          <div class="squad-code" style="font-size:28px;margin-bottom:16px;">${squad.code}</div>
+          <button class="btn btn-primary" onclick="copyCode('${squad.code}')">📋 Copy & Share Code</button>
+        </div>
+      `;
+    }
+
+    async function createSquad() {
+      const name = document.getElementById('squad-name-input').value.trim() || 'My Squad';
+      Auth.showLoading("Creating Squad...", "Registering squad on battle nets...");
+      try {
+        const token = await Auth.getToken();
+        if (!token) return;
+        const res = await fetch('/api/squad', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ action: 'create', name })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem('dsaquest_squad', JSON.stringify(data.squad));
+          closeModals();
+          Toast.info(`Squad "${data.squad.name}" created!`);
+          await fetchSquadMembers();
+          render();
+        } else {
+          const errData = await res.json();
+          alert(errData.error || "Failed to create squad");
+        }
+      } catch (err) {
+        console.error("Create squad error:", err);
+      } finally {
+        Auth.hideLoading();
+      }
+    }
+
+    async function joinSquad() {
+      const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+      if (code.length < 4) { Toast.info('Please enter a valid squad code'); return; }
+      Auth.showLoading("Joining Squad...", "Authenticating squad code...");
+      try {
+        const token = await Auth.getToken();
+        if (!token) return;
+        const res = await fetch('/api/squad', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ action: 'join', code })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem('dsaquest_squad', JSON.stringify(data.squad));
+          closeModals();
+          Toast.info(`Joined squad with code ${data.squad.code}!`);
+          await fetchSquadMembers();
+          render();
+        } else {
+          const errData = await res.json();
+          alert(errData.error || "Failed to join squad. Check the code.");
+        }
+      } catch (err) {
+        console.error("Join squad error:", err);
+      } finally {
+        Auth.hideLoading();
+      }
+    }
+
+    async function leaveSquad() {
+      if (!confirm('Leave the squad? You can always create or join a new one.')) return;
+      Auth.showLoading("Leaving Squad...", "Removing you from squad rosters...");
+      try {
+        const token = await Auth.getToken();
+        if (!token) return;
+        const res = await fetch('/api/squad', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ action: 'leave' })
+        });
+        if (res.ok) {
+          localStorage.removeItem('dsaquest_squad');
+          Toast.info(`Left squad.`);
+          squadMembers = [];
+          render();
+        }
+      } catch (err) {
+        console.error("Leave squad error:", err);
+      } finally {
+        Auth.hideLoading();
+      }
+    }
+
+    function copyCode(code) {
+      navigator.clipboard.writeText(code).then(() => {
+        const fb = document.getElementById('copied-fb');
+        fb.style.display = 'block';
+        setTimeout(() => { fb.style.display = 'none'; }, 2000);
+      }).catch(() => {
+        prompt('Copy this code:', code);
+      });
+    }
+
+    function closeModals() {
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+      m.addEventListener('click', e => { if (e.target === m) closeModals(); });
+    });
+
+  </script>
+</body>
+</html>

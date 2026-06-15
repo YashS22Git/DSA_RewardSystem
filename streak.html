@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSA Quest — Streak Calendar</title>
+  <meta name="description" content="Track your daily DSA learning streak with a GitHub-style heatmap calendar." />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .streak-hero {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .streak-stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .streak-stat-card:hover { transform: translateY(-2px); }
+    .streak-stat-icon { font-size: 32px; margin-bottom: 8px; }
+    .streak-stat-val { font-family: 'Orbitron', sans-serif; font-size: 32px; font-weight: 700; }
+    .streak-stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+    .heatmap-main {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+    }
+
+    .heatmap-months {
+      display: flex;
+      gap: 3px;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      padding-left: 30px;
+    }
+
+    .heatmap-wrap {
+      display: flex;
+      gap: 6px;
+    }
+
+    .heatmap-days {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding-top: 2px;
+    }
+
+    .heatmap-day-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      height: 14px;
+      display: flex;
+      align-items: center;
+    }
+
+    .heatmap-cols {
+      display: flex;
+      gap: 3px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .heatmap-col { display: flex; flex-direction: column; gap: 3px; }
+    .heatmap-cell-full {
+      width: 14px; height: 14px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+      position: relative;
+    }
+    .heatmap-cell-full:hover { transform: scale(1.4); z-index: 10; }
+
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .milestone-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: var(--transition);
+    }
+
+    .milestone-card.achieved {
+      border-color: rgba(0,255,136,0.3);
+      background: rgba(0,255,136,0.04);
+    }
+
+    .milestone-card.active-milestone {
+      border-color: rgba(251,191,36,0.3);
+      background: rgba(251,191,36,0.04);
+    }
+
+    .milestone-icon { font-size: 28px; flex-shrink: 0; }
+    .milestone-info { flex: 1; }
+    .milestone-name { font-size: 14px; font-weight: 700; }
+    .milestone-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .milestone-reward { font-size: 12px; font-weight: 700; color: var(--gold); }
+
+    .calendar-tooltip {
+      position: fixed;
+      background: rgba(0,0,0,0.9);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text-primary);
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <div class="calendar-tooltip" id="cal-tooltip"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div>
+        <div class="page-title">🔥 Streak Calendar</div>
+        <div class="page-subtitle">Your daily DSA activity over the past year</div>
+      </div>
+      <div class="header-actions">
+        <div class="streak-badge" id="streak-display">
+          <span class="streak-fire">🔥</span>
+          <span id="streak-num">0</span> Day Streak
+        </div>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <!-- Stats -->
+      <div class="streak-hero fade-in" id="streak-stats"></div>
+
+      <!-- Heatmap -->
+      <div class="heatmap-main fade-in-delay-1 mb-20">
+        <div class="card-title" style="margin-bottom:16px">📅 Activity Heatmap — Last 12 Months</div>
+        <div id="heatmap-months" class="heatmap-months"></div>
+        <div class="heatmap-wrap">
+          <div class="heatmap-days" id="heatmap-day-labels"></div>
+          <div class="heatmap-cols" id="heatmap-cols"></div>
+        </div>
+        <div class="heatmap-legend">
+          <span>Less</span>
+          <div style="width:14px;height:14px;border-radius:3px;background:rgba(0,255,136,0.06)"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:rgba(0,255,136,0.25)"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:rgba(0,255,136,0.5)"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:rgba(0,255,136,0.75)"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:var(--green);box-shadow:0 0 6px rgba(0,255,136,0.5)"></div>
+          <span>More</span>
+        </div>
+      </div>
+
+      <!-- Milestones -->
+      <div class="card fade-in-delay-2">
+        <div class="card-title">🏅 Streak Milestones</div>
+        <div id="milestones" style="display:flex;flex-direction:column;gap:10px;margin-top:4px;"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script>
+    let streak;
+    document.addEventListener('dsaquest_ready', () => {
+      document.getElementById('nav-placeholder').innerHTML = buildNav('streak');
+      streak = Engine.getStreak();
+      document.getElementById('streak-num').textContent = streak.current;
+      renderStats();
+      renderHeatmap();
+      renderMilestones();
+    });
+
+    function renderStats() {
+      const summary = Engine.getSummary();
+      const hm = Engine.getHeatmap();
+      const totalDays = Object.keys(hm).length;
+      const totalTopics = Object.values(hm).reduce((a, b) => a + b, 0);
+      const avgPerDay = totalDays > 0 ? (totalTopics / totalDays).toFixed(1) : 0;
+
+      const stats = [
+        { icon: '🔥', val: streak.current, label: 'Current Streak', color: '#fb923c' },
+        { icon: '⚡', val: streak.longest, label: 'Longest Streak', color: 'var(--cyan)' },
+        { icon: '📅', val: totalDays, label: 'Active Days', color: 'var(--green)' },
+        { icon: '📚', val: totalTopics, label: 'Topics Studied', color: 'var(--purple-light)' },
+        { icon: '📊', val: avgPerDay, label: 'Avg per Day', color: 'var(--gold)' },
+      ];
+
+      document.getElementById('streak-stats').innerHTML = stats.map(s => `
+        <div class="streak-stat-card" style="border-color:${s.color}33">
+          <div class="streak-stat-icon">${s.icon}</div>
+          <div class="streak-stat-val" style="color:${s.color}">${s.val}</div>
+          <div class="streak-stat-label">${s.label}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderHeatmap() {
+      const hm = Engine.getHeatmap();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Start from ~52 weeks ago (Sunday)
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - (52 * 7) - today.getDay());
+
+      const cols = [];
+      const monthLabels = [];
+      let lastMonth = -1;
+      let colIdx = 0;
+
+      let d = new Date(startDate);
+      while (d <= today) {
+        const col = [];
+        const weekStart = new Date(d);
+        for (let day = 0; day < 7; day++) {
+          if (d <= today) {
+            const key = d.toISOString().split('T')[0];
+            const count = hm[key] || 0;
+            const level = count === 0 ? 0 : count < 2 ? 1 : count < 4 ? 2 : count < 6 ? 3 : 4;
+            const isFuture = d > today;
+            col.push({ key, count, level, isFuture, date: new Date(d), day: d.getDay() });
+          } else {
+            col.push({ key: '', count: 0, level: 0, isFuture: true, date: new Date(d) });
+          }
+          d.setDate(d.getDate() + 1);
+        }
+        // Month label
+        const month = weekStart.getMonth();
+        if (month !== lastMonth) {
+          monthLabels.push({ colIdx, label: weekStart.toLocaleDateString('en', { month: 'short' }) });
+          lastMonth = month;
+        } else {
+          monthLabels.push({ colIdx, label: '' });
+        }
+        cols.push(col);
+        colIdx++;
+      }
+
+      // Month header
+      document.getElementById('heatmap-months').innerHTML = monthLabels.map(m =>
+        `<div style="width:17px;flex-shrink:0;text-align:left">${m.label}</div>`
+      ).join('');
+
+      // Day labels
+      const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+      document.getElementById('heatmap-day-labels').innerHTML = dayLabels.map(l =>
+        `<div class="heatmap-day-label">${l}</div>`
+      ).join('');
+
+      // Cells
+      const tooltip = document.getElementById('cal-tooltip');
+      document.getElementById('heatmap-cols').innerHTML = cols.map(col => `
+        <div class="heatmap-col">
+          ${col.map(cell => `
+            <div class="heatmap-cell-full level-${cell.isFuture ? 0 : cell.level}"
+              style="${cell.level === 4 && !cell.isFuture ? 'box-shadow:0 0 6px rgba(0,255,136,0.6)' : ''}"
+              data-key="${cell.key}"
+              data-count="${cell.count}"
+              onmouseenter="showTooltip(event, '${cell.key}', ${cell.count})"
+              onmouseleave="hideTooltip()">
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    function showTooltip(e, key, count) {
+      if (!key) return;
+      const tooltip = document.getElementById('cal-tooltip');
+      const date = new Date(key + 'T00:00:00');
+      const label = date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+      tooltip.textContent = count > 0
+        ? `${label}: ${count} topic${count !== 1 ? 's' : ''} completed ✅`
+        : `${label}: No activity`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 12) + 'px';
+      tooltip.style.top = (e.clientY - 30) + 'px';
+    }
+
+    function hideTooltip() {
+      document.getElementById('cal-tooltip').style.display = 'none';
+    }
+
+    function renderMilestones() {
+      const milestones = [
+        { days: 3,  icon: '🔥', name: '3-Day Streak',   desc: 'Complete topics 3 days in a row',  reward: '+50 XP Bonus' },
+        { days: 7,  icon: '⚔️', name: '7-Day Warrior',  desc: 'One full week of consistency',     reward: '+150 XP Bonus' },
+        { days: 14, icon: '💪', name: 'Fortnight Force', desc: 'Two weeks of unbroken learning',   reward: 'Week Warrior Badge' },
+        { days: 30, icon: '🏅', name: 'Month Master',    desc: '30 days — the ultimate challenge', reward: '+500 XP + Month Master Badge' },
+      ];
+
+      const achieved = streak.milestones || [];
+      const current = streak.current;
+
+      document.getElementById('milestones').innerHTML = milestones.map(m => {
+        const done = achieved.includes(m.days) || current >= m.days;
+        const isActive = !done && current >= m.days * 0.5;
+        const pct = Math.min(100, Math.round((current / m.days) * 100));
+        return `
+          <div class="milestone-card ${done ? 'achieved' : isActive ? 'active-milestone' : ''}">
+            <div class="milestone-icon">${m.icon}</div>
+            <div class="milestone-info">
+              <div class="milestone-name">${m.name}</div>
+              <div class="milestone-desc">${m.desc}</div>
+              ${!done ? `
+                <div style="margin-top:8px;">
+                  <div class="xp-bar-container" style="height:5px;max-width:200px;">
+                    <div class="xp-bar-fill" style="width:${pct}%;height:5px;background:linear-gradient(90deg,var(--orange),var(--gold))"></div>
+                  </div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${current}/${m.days} days</div>
+                </div>
+              ` : `<div style="color:var(--green);font-size:12px;font-weight:700;margin-top:4px;">✅ Achieved!</div>`}
+            </div>
+            <div class="milestone-reward">🎁 ${m.reward}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+  </script>
+</body>
+</html>

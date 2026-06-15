@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSA Quest — Leaderboard</title>
+  <meta name="description" content="Compete with your squad and track your rank on the DSA Quest leaderboard." />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .lb-header-card {
+      background: linear-gradient(135deg, rgba(251,191,36,0.12), rgba(124,58,237,0.08));
+      border: 1px solid rgba(251,191,36,0.25);
+      border-radius: var(--radius-xl);
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .podium {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 8px;
+      margin: 24px 0 8px;
+    }
+
+    .podium-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .podium-avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      border: 3px solid transparent;
+      position: relative;
+    }
+
+    .podium-rank {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 99px;
+      text-align: center;
+    }
+
+    .podium-name { font-size: 12px; font-weight: 700; text-align: center; }
+    .podium-xp { font-size: 11px; text-align: center; font-family: 'Orbitron', sans-serif; }
+
+    .podium-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px 6px 0 0;
+      font-size: 20px;
+      width: 72px;
+    }
+
+    .podium-1st .podium-avatar { border-color: var(--gold); box-shadow: 0 0 20px rgba(251,191,36,0.5); }
+    .podium-2nd .podium-avatar { border-color: #94a3b8; box-shadow: 0 0 15px rgba(148,163,184,0.3); }
+    .podium-3rd .podium-avatar { border-color: #b45309; box-shadow: 0 0 15px rgba(180,83,9,0.3); }
+
+    .crown { position: absolute; top: -18px; font-size: 22px; animation: crownBounce 2s ease-in-out infinite; }
+    @keyframes crownBounce { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-5px) rotate(5deg)} }
+
+    .lb-you-highlight {
+      border-left: 3px solid var(--cyan);
+    }
+
+    .global-row {
+      display: flex; align-items: center; gap: 16px;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      transition: var(--transition);
+      margin-bottom: 4px;
+    }
+    .global-row:hover { background: var(--bg-card-hover); border-color: var(--border); }
+    .global-row.you { border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.04); }
+
+    .global-rank { font-family:'Orbitron',sans-serif; font-size:14px; font-weight:700; width:28px; text-align:center; flex-shrink:0; }
+    .global-avatar { width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:2px solid var(--border); }
+    .global-name { flex:1;font-size:13px;font-weight:600; }
+    .global-xp { font-size:13px;font-weight:700;font-family:'Orbitron',sans-serif;color:var(--gold); }
+
+    .you-tag {
+      font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;
+      background:rgba(0,212,255,0.15);color:var(--cyan);border:1px solid rgba(0,212,255,0.3);
+      margin-left:6px;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .weekly-winner {
+      background: linear-gradient(135deg,rgba(251,191,36,0.1),rgba(249,115,22,0.06));
+      border:1px solid rgba(251,191,36,0.3);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      display:flex;align-items:center;gap:16px;margin-bottom:20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div>
+        <div class="page-title">🏆 Leaderboard</div>
+        <div class="page-subtitle">Compete with your squad — rankings update in real time</div>
+      </div>
+      <div class="header-actions">
+        <a href="squad.html" class="btn btn-cyan">⚔️ Manage Squad</a>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <!-- Tab Bar -->
+      <div class="tabs mb-20 fade-in">
+        <button class="tab-btn active" id="tab-squad" onclick="switchTab('squad')">⚔️ Squad</button>
+        <button class="tab-btn" id="tab-global" onclick="switchTab('global')">🌏 Global Top 100</button>
+      </div>
+
+      <!-- SQUAD TAB -->
+      <div class="tab-panel active" id="panel-squad">
+        <!-- Header Card -->
+        <div class="lb-header-card fade-in mb-20" id="squad-header"></div>
+
+        <!-- Podium -->
+        <div id="podium-section" class="fade-in-delay-1"></div>
+
+        <!-- Leaderboard List -->
+        <div class="card fade-in-delay-2">
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>All Members</span>
+            <span id="squad-count" style="font-size:12px;color:var(--text-secondary);font-family:normal;font-weight:400;text-transform:none;letter-spacing:0;"></span>
+          </div>
+          <div id="squad-list"></div>
+        </div>
+      </div>
+
+      <!-- GLOBAL TAB -->
+      <div class="tab-panel" id="panel-global">
+        <div class="weekly-winner fade-in" id="weekly-winner"></div>
+        <div class="card fade-in-delay-1">
+          <div class="card-title">🌏 Global Rankings (Demo)</div>
+          <div id="global-list"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script>
+    let squadName = "Demo Squad";
+    let squadCode = "DEMO01";
+    let squadMembers = [];
+    let globalList = [];
+
+    async function fetchLeaderboardData() {
+      try {
+        const token = await Auth.getToken();
+        if (!token) return;
+        const res = await fetch('/api/leaderboard', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          squadName = data.squadName || "Demo Squad";
+          squadCode = data.squadCode || "DEMO01";
+          squadMembers = data.squadMembers || [];
+          globalList = data.globalList || [];
+        }
+      } catch (err) {
+        console.warn("Failed to fetch leaderboard data:", err);
+      }
+    }
+
+    document.addEventListener('dsaquest_ready', async () => {
+      document.getElementById('nav-placeholder').innerHTML = buildNav('leaderboard');
+      await fetchLeaderboardData();
+      renderSquad();
+    });
+
+    // Build full member list (demo friends + you)
+    function buildSquadMembers() {
+      const summary = Engine.getSummary();
+      const { profile, completedCount, streak } = summary;
+      const xp = profile.xp;
+
+      const you = {
+        name: profile.name,
+        avatar: profile.avatar,
+        xp,
+        streak: streak.current,
+        completed: completedCount,
+        total: DSA_DATA.totalSubtopics,
+        isYou: true,
+        level: Engine.getLevelForXP(xp),
+      };
+
+      const members = DSA_DATA.demoMembers.map(m => ({
+        ...m,
+        level: Engine.getLevelForXP(m.xp),
+      }));
+
+      // Insert you into sorted list
+      const all = [...members, you].sort((a, b) => b.xp - a.xp);
+      return all;
+    }
+
+    function getLevelColor(lvl) { return lvl?.color || '#94a3b8'; }
+
+    function renderSquad() {
+      let members = [];
+      const squad = Engine.getSquad();
+      if (!squad || squadMembers.length === 0) {
+        members = buildSquadMembers();
+      } else {
+        const summary = Engine.getSummary();
+        members = squadMembers.map((m) => ({
+          ...m,
+          isYou: m.name === summary.profile.name,
+          total: DSA_DATA.totalSubtopics,
+          level: Engine.getLevelForXP(m.xp)
+        })).sort((a, b) => b.xp - a.xp);
+      }
+      const youIdx = members.findIndex(m => m.isYou);
+
+      // Header
+      document.getElementById('squad-header').innerHTML = `
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;">Current Squad</div>
+          <div style="font-size:22px;font-weight:700;margin-top:4px;">${squad?.name || 'Demo Squad'}</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">Code: <span class="text-cyan font-orbitron">${squad?.code || 'DEMO01'}</span></div>
+        </div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+          <div style="text-align:center;">
+            <div style="font-size:28px;font-weight:700;font-family:'Orbitron',sans-serif;color:var(--gold);">${members.length}</div>
+            <div style="font-size:12px;color:var(--text-secondary);">Members</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:28px;font-weight:700;font-family:'Orbitron',sans-serif;color:var(--cyan);">#${youIdx + 1}</div>
+            <div style="font-size:12px;color:var(--text-secondary);">Your Rank</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:28px;font-weight:700;font-family:'Orbitron',sans-serif;color:var(--purple-light);">${members.reduce((a,m)=>a+m.xp,0).toLocaleString()}</div>
+            <div style="font-size:12px;color:var(--text-secondary);">Squad XP</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('squad-count').textContent = `${members.length} members`;
+
+      // Podium (top 3)
+      const top3 = members.slice(0, 3);
+      const podiumOrder = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3;
+      const podiumHeights = ['90px', '120px', '70px'];
+      const podiumColors = ['#94a3b8', 'var(--gold)', '#b45309'];
+      const podiumBg = ['rgba(148,163,184,0.1)', 'rgba(251,191,36,0.1)', 'rgba(180,83,9,0.1)'];
+      const podiumNums = [2, 1, 3];
+
+      document.getElementById('podium-section').innerHTML = `
+        <div class="card card-glow-gold mb-20">
+          <div class="podium">
+            ${podiumOrder.map((m, i) => {
+              const realIdx = i === 0 ? 1 : i === 1 ? 0 : 2;
+              return `
+                <div class="podium-slot podium-${podiumNums[i]}${podiumNums[i] === 1 ? 'st' : podiumNums[i] === 2 ? 'nd' : 'rd'}">
+                  <div class="podium-name">${m.name.split(' ')[0]}${m.isYou ? ' (You)' : ''}</div>
+                  <div class="podium-avatar" style="border-color:${podiumColors[i]};box-shadow:0 0 15px ${podiumColors[i]}44;">
+                    ${podiumNums[i] === 1 ? '<div class="crown">👑</div>' : ''}
+                    ${m.avatar}
+                  </div>
+                  <div class="podium-xp" style="color:${podiumColors[i]}">${m.xp.toLocaleString()} XP</div>
+                  <div class="podium-bar" style="height:${podiumHeights[i]};background:${podiumBg[i]};border:1px solid ${podiumColors[i]}44;">
+                    ${podiumNums[i]}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+
+      // Full list
+      const rankIcons = ['🥇', '🥈', '🥉'];
+      document.getElementById('squad-list').innerHTML = members.map((m, i) => {
+        const rank = i + 1;
+        const rankClass = rank === 1 ? 'gold-rank' : rank === 2 ? 'silver-rank' : rank === 3 ? 'bronze-rank' : '';
+        const pct = Math.round((m.completed / m.total) * 100);
+        return `
+          <div class="leaderboard-row ${rankClass} ${m.isYou ? 'you-row' : ''}">
+            <div class="rank-num rank-${rank}" style="${rank > 3 ? 'color:var(--text-secondary)' : ''}">
+              ${rank <= 3 ? rankIcons[rank-1] : rank}
+            </div>
+            <div class="lb-avatar" style="background:${getLevelColor(m.level)}22;border-color:${getLevelColor(m.level)}44;font-size:20px;">
+              ${m.avatar}
+            </div>
+            <div class="lb-info">
+              <div class="lb-name">
+                ${m.name}
+                ${m.isYou ? '<span class="you-tag">YOU</span>' : ''}
+              </div>
+              <div class="lb-level" style="color:${getLevelColor(m.level)}">Lv.${m.level?.level} ${m.level?.title}</div>
+            </div>
+            <div class="lb-stats">
+              <div class="lb-stat">
+                <div class="lb-stat-value text-gold">${m.xp.toLocaleString()}</div>
+                <div class="lb-stat-label">XP</div>
+              </div>
+              <div class="lb-stat">
+                <div class="lb-stat-value" style="color:#fb923c">${m.streak}🔥</div>
+                <div class="lb-stat-label">Streak</div>
+              </div>
+              <div class="lb-stat">
+                <div class="lb-stat-value text-cyan">${pct}%</div>
+                <div class="lb-stat-label">Done</div>
+              </div>
+              <div class="lb-stat" style="min-width:80px;">
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px;">${m.completed}/${m.total}</div>
+                <div class="xp-bar-container" style="height:6px;width:80px;">
+                  <div class="xp-bar-fill" style="width:${pct}%;height:6px;background:${getLevelColor(m.level)}"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderGlobal() {
+      const profile = Engine.getProfile();
+      const xp = profile.xp;
+
+      // Simulated global players
+      const globalNames = [
+        {n:'AlgoMaster99',a:'🧠',xp:18700},
+        {n:'CodeNinja_X',a:'⚡',xp:17200},
+        {n:'DSA_Sensei',a:'🎓',xp:15800},
+        {n:'PixelWarrior',a:'🛡️',xp:14300},
+        {n:'ByteHunter',a:'🔮',xp:13100},
+        {n:'QuantumCoder',a:'🌀',xp:12400},
+        {n:'NullPointer',a:'🔗',xp:11800},
+        {n:'HeapMaster',a:'⛰️',xp:11200},
+        {n:'TreeWalker',a:'🌲',xp:10500},
+        {n:'GraphGuru',a:'🕸️',xp:9800},
+        {n:'SortingHat',a:'🎩',xp:9100},
+        {n:'RecurMancer',a:'🔄',xp:8400},
+        {n:'DPWizard',a:'🧙',xp:7700},
+        {n:'BitFlip',a:'⚙️',xp:7100},
+        {n:'Arjun Sharma',a:'⚔️',xp:6800},
+        {n:'HashQueen',a:'#️⃣',xp:6200},
+        {n:'StackAttack',a:'📚',xp:5700},
+        {n:'QueueKing',a:'🔮',xp:5100},
+        {n:'LinkedLegend',a:'🔗',xp:4600},
+        {n:'Priya Patel',a:'🌟',xp:4200},
+      ];
+
+      // Insert the user at appropriate rank
+      let allGlobal = [];
+      if (globalList.length === 0) {
+        allGlobal = [...globalNames, {n: profile.name, a: profile.avatar, xp, isYou: true}]
+          .sort((a,b) => b.xp - a.xp)
+          .slice(0, 30);
+      } else {
+        allGlobal = globalList.map(u => ({
+          n: u.name,
+          a: u.avatar,
+          xp: u.xp,
+          isYou: u.isYou
+        }));
+      }
+
+      document.getElementById('weekly-winner').innerHTML = `
+        <div style="font-size:36px;">🏆</div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;">This Week's Champion</div>
+          <div style="font-size:18px;font-weight:700;margin-top:2px;">AlgoMaster99 🧠</div>
+          <div style="font-size:13px;color:var(--text-secondary);">+2,340 XP earned this week · 14-day streak</div>
+        </div>
+      `;
+
+      const rankIcons = ['🥇','🥈','🥉'];
+      document.getElementById('global-list').innerHTML = allGlobal.map((m, i) => {
+        const rank = i + 1;
+        const rankDisplay = rank <= 3 ? rankIcons[rank-1] : rank;
+        const levelInfo = Engine.getLevelForXP(m.xp);
+        return `
+          <div class="global-row ${m.isYou ? 'you' : ''}">
+            <div class="global-rank ${rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':''}">${rankDisplay}</div>
+            <div class="global-avatar" style="background:${levelInfo.color}22;border-color:${levelInfo.color}44">${m.a}</div>
+            <div class="global-name">
+              ${m.n} ${m.isYou ? '<span class="you-tag">YOU</span>' : ''}
+              <div style="font-size:11px;color:${levelInfo.color};font-weight:500;">Lv.${levelInfo.level} ${levelInfo.title}</div>
+            </div>
+            <div class="global-xp">${m.xp.toLocaleString()} XP</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function switchTab(tab) {
+      document.getElementById('panel-squad').classList.toggle('active', tab === 'squad');
+      document.getElementById('panel-global').classList.toggle('active', tab === 'global');
+      document.getElementById('tab-squad').classList.toggle('active', tab === 'squad');
+      document.getElementById('tab-global').classList.toggle('active', tab === 'global');
+      if (tab === 'global') renderGlobal();
+    }
+
+  </script>
+</body>
+</html>

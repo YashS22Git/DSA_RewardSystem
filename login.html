@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSA Quest — Enter the Arena ⚔️</title>
+  <meta name="description" content="Sign in or register for DSA Quest to start your placement preparation journey." />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body {
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+      perspective: 1000px;
+      z-index: 1;
+    }
+
+    .auth-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 36px 40px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(124,58,237,0.1);
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    
+    .auth-card::before {
+      content: '';
+      position: absolute;
+      top: -2px; left: -2px; right: -2px; height: 3px;
+      background: linear-gradient(90deg, var(--purple), var(--cyan));
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .auth-logo-icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+      animation: logoBounce 2s ease-in-out infinite;
+    }
+
+    @keyframes logoBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .auth-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, var(--purple-light), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .auth-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      background: var(--bg-secondary);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .auth-tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: var(--transition);
+    }
+
+    .auth-tab-btn.active {
+      background: var(--bg-card-hover);
+      color: var(--cyan);
+      border: 1px solid rgba(0,212,255,0.2);
+    }
+
+    .auth-form {
+      display: none;
+    }
+
+    .auth-form.active {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .error-alert {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--red);
+      font-size: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .google-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      width: 100%;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 16px;
+    }
+
+    .google-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .google-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      margin: 20px 0;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .divider:not(:empty)::before { margin-right: .5em; }
+    .divider:not(:empty)::after { margin-left: .5em; }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="auth-card fade-in">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">🗡️</div>
+        <div class="auth-title">DSA QUEST</div>
+        <div class="auth-subtitle">The Gamified Placement Arena</div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="error-alert" id="error-box">
+        <span>⚠️</span>
+        <span id="error-message">An error occurred</span>
+      </div>
+
+      <!-- Tab Buttons -->
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tab-login-btn" onclick="switchForm('login')">Enter Arena (Login)</button>
+        <button class="auth-tab-btn" id="tab-signup-btn" onclick="switchForm('signup')">New Account</button>
+      </div>
+
+      <!-- Login Form -->
+      <form class="auth-form active" id="login-form" onsubmit="handleAuthSubmit(event, 'login')">
+        <div>
+          <label class="input-label" for="login-email">Email Address</label>
+          <input type="email" id="login-email" class="input-field" placeholder="you@college.edu" required />
+        </div>
+        <div>
+          <label class="input-label" for="login-password">Password</label>
+          <input type="password" id="login-password" class="input-field" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="btn btn-primary w-full" style="margin-top:8px;">Begin Quest ⚔️</button>
+      </form>
+
+      <!-- Signup Form -->
+      <form class="auth-form" id="signup-form" onsubmit="handleAuthSubmit(event, 'signup')">
+        <div>
+          <label class="input-label" for="signup-name">Warrior Name (Display Name)</label>
+          <input type="text" id="signup-name" class="input-field" placeholder="e.g. CodeGod" minlength="3" maxlength="20" required />
+        </div>
+        <div>
+          <label class="input-label" for="signup-email">Email Address</label>
+          <input type="email" id="signup-email" class="input-field" placeholder="you@college.edu" required />
+        </div>
+        <div>
+          <label class="input-label" for="signup-password">Choose Password</label>
+          <input type="password" id="signup-password" class="input-field" placeholder="Min. 6 characters" minlength="6" required />
+        </div>
+        <button type="submit" class="btn btn-cyan w-full" style="margin-top:8px;">Forge Character 🚀</button>
+      </form>
+
+      <div class="divider">or continue with</div>
+
+      <!-- Google Authentication -->
+      <button class="google-btn" onclick="handleGoogleSignIn()">
+        <svg class="google-icon" viewBox="0 0 24 24">
+          <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.57 14.98 1 12 1 7.35 1 3.39 3.65 1.48 7.52l3.87 3C6.26 7.53 8.9 5.04 12 5.04z"/>
+          <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.44c-.28 1.47-1.11 2.72-2.36 3.56l3.66 2.84c2.14-1.98 3.39-4.89 3.39-8.5z"/>
+          <path fill="#FBBC05" d="M5.35 14.78c-.22-.67-.35-1.39-.35-2.13s.13-1.46.35-2.13L1.48 7.52C.54 9.43 0 11.62 0 14s.54 4.57 1.48 6.48l3.87-3c-.22-.67-.35-1.39-.35-2.13z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.66-2.84c-1.01.67-2.3.1-3.62-.1C8.9 17.47 6.26 14.98 5.35 11.48l-3.87 3C3.39 18.35 7.35 23 12 23z"/>
+        </svg>
+        Google Account
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Firebase CDN script tags -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    function switchForm(formType) {
+      document.querySelectorAll('.auth-tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+      document.getElementById('error-box').style.display = 'none';
+
+      if (formType === 'login') {
+        document.getElementById('tab-login-btn').classList.add('active');
+        document.getElementById('login-form').classList.add('active');
+      } else {
+        document.getElementById('tab-signup-btn').classList.add('active');
+        document.getElementById('signup-form').classList.add('active');
+      }
+    }
+
+    async function handleAuthSubmit(event, type) {
+      event.preventDefault();
+      const errorBox = document.getElementById('error-box');
+      const errorMsg = document.getElementById('error-message');
+      errorBox.style.display = 'none';
+
+      Auth.showLoading(type === 'login' ? "Opening Arena Gates..." : "Forging Warrior Class...", "Talking with Database...");
+
+      try {
+        if (type === 'login') {
+          const email = document.getElementById('login-email').value;
+          const pass = document.getElementById('login-password').value;
+          await Auth.login(email, pass);
+        } else {
+          const name = document.getElementById('signup-name').value;
+          const email = document.getElementById('signup-email').value;
+          const pass = document.getElementById('signup-password').value;
+          await Auth.signup(email, pass, name);
+        }
+      } catch (err) {
+        console.error(err);
+        Auth.hideLoading();
+        errorMsg.textContent = formatError(err.code || err.message);
+        errorBox.style.display = 'flex';
+      }
+    }
+
+    async function handleGoogleSignIn() {
+      const errorBox = document.getElementById('error-box');
+      const errorMsg = document.getElementById('error-message');
+      errorBox.style.display = 'none';
+
+      Auth.showLoading("Summoning Google Spirit...", "Signing in via portal...");
+
+      try {
+        const cred = await Auth.loginWithGoogle();
+        const user = cred.user;
+        const token = await user.getIdToken();
+        
+        // Sync profile state on signup or first login via google
+        const initProfile = {
+          name: user.displayName || 'Google Warrior',
+          avatar: '⚔️',
+          xp: 0,
+          level: 1,
+          joinedAt: new Date().toISOString()
+        };
+        
+        await fetch('/api/progress', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ profile: initProfile, onlyIfNew: true })
+        });
+      } catch (err) {
+        console.error(err);
+        Auth.hideLoading();
+        errorMsg.textContent = formatError(err.code || err.message);
+        errorBox.style.display = 'flex';
+      }
+    }
+
+    function formatError(code) {
+      switch (code) {
+        case 'auth/invalid-email':
+          return 'Enter a valid email address.';
+        case 'auth/user-disabled':
+          return 'This account has been disabled.';
+        case 'auth/user-not-found':
+          return 'No warrior found with this email.';
+        case 'auth/wrong-password':
+          return 'Wrong password. Check spelling and retry.';
+        case 'auth/email-already-in-use':
+          return 'This email address is already registered.';
+        case 'auth/weak-password':
+          return 'Password must be at least 6 characters.';
+        case 'auth/popup-closed-by-user':
+          return 'Google sign-in popup was closed.';
+        default:
+          return code;
+      }
+    }
+  </script>
+</body>
+</html>

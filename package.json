@@ -1,0 +1,14 @@
+{
+  "name": "dsa-quest",
+  "version": "1.0.0",
+  "description": "DSA Quest - Gamified Learning Platform",
+  "main": "netlify/functions/progress.js",
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.0",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

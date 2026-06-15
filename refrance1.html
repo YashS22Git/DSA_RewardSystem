@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AlgoQuest Dashboard - YOLO</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&amp;family=Inter:wght@400;500;600&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script
+        id="tailwind-config">tailwind.config = {
+                darkMode: "class", theme: {
+                    extend: {
+                        colors: {
+                            background: "#1c1917",
+                            "surface-dim": "#1c1917",
+                            surface: "#1c1917",
+                            "surface-container-lowest": "#0c0a09",
+                            "surface-container-low": "#1c1917",
+                            "surface-container": "#292524",
+                            "surface-container-high": "#44403c",
+                            "surface-container-highest": "#57534e",
+                            "on-surface": "#e7e5e4",
+                            "on-surface-variant": "#a8a29e",
+                            primary: "#fbbf24",
+                            "primary-fixed": "#fde68a",
+                            "primary-fixed-dim": "#f59e0b",
+                            "on-primary": "#452e00",
+                            secondary: "#10b981",
+                            "secondary-fixed": "#34d399",
+                            "secondary-fixed-dim": "#10b981",
+                            "tertiary-fixed": "#f87171",
+                            "tertiary-fixed-dim": "#ef4444",
+                            "tertiary-container": "#7f1d1d",
+                            "surface-variant": "#44403c",
+                            "outline-variant": "#78716c",
+                            outline: "#a8a29e",
+                            "inverse-on-surface": "#f5f5f4",
+                            "inverse-surface": "#292524",
+                            "error-container": "#9f1239",
+                            "on-error-container": "#fecdd3",
+                            "on-error": "#fff1f2",
+                            error: "#f43f5e",
+                            "surface-tint": "#fbbf24",
+                            "inverse-primary": "#b45309"
+                        }, borderRadius: { DEFAULT: "0", lg: "0", xl: "0", full: "9999px" }, spacing: { base_unit: "4px", md: "16px", xl: "40px", margin_desktop: "32px", lg: "24px", gutter: "12px", xs: "4px", margin_mobile: "16px", sm: "8px" }, fontFamily: { "headline-md": ["Fraunces", "serif"], "mono-label": ["Inter", "sans-serif"], "body-md": ["Inter", "sans-serif"], "label-md": ["Fraunces", "serif"], "label-sm": ["Inter", "sans-serif"], "headline-lg-mobile": ["Fraunces", "serif"], "body-lg": ["Inter", "sans-serif"], "display-lg": ["Fraunces", "serif"], "headline-lg": ["Fraunces", "serif"], headline: ["Fraunces", "serif"], display: ["Fraunces", "serif"], body: ["Inter", "sans-serif"], label: ["Fraunces", "serif"] }, fontSize: { "headline-md": ["28px", { lineHeight: "1.1", fontWeight: "800" }], "mono-label": ["13px", { lineHeight: "1.0", letterSpacing: "0.15em", fontWeight: "600", textTransform: "uppercase" }], "body-md": ["16px", { lineHeight: "1.5", fontWeight: "400" }], "label-md": ["16px", { lineHeight: "1.2", letterSpacing: "0.02em", fontWeight: "700" }], "label-sm": ["13px", { lineHeight: "1.2", letterSpacing: "0.02em", fontWeight: "500" }], "headline-lg-mobile": ["28px", { lineHeight: "1.1", fontWeight: "800" }], "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }], "display-lg": ["56px", { lineHeight: "1.0", letterSpacing: "-0.03em", fontWeight: "900" }], "headline-lg": ["40px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "900" }] }
+                    }
+                }
+            };</script>
+    <style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: theme('colors.background');
+            border-left: 2px solid theme('colors.surface-container-highest');
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.primary');
+            border: 2px solid theme('colors.background');
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.primary-fixed-dim');
+        }
+
+        .brutalist-border {
+            border: 4px solid theme('colors.on-surface');
+            box-shadow: 6px 6px 0px theme('colors.primary-fixed-dim');
+        }
+
+        .brutalist-border-secondary {
+            border: 4px solid theme('colors.on-surface');
+            box-shadow: 6px 6px 0px theme('colors.secondary-fixed-dim');
+        }
+
+        .brutalist-border-alt {
+            border: 4px solid theme('colors.on-surface');
+            box-shadow: -4px 4px 0px theme('colors.tertiary-fixed-dim');
+        }
+
+        .stack-item {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .stack-item:hover {
+            transform: translate(-2px, -2px);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col selection:bg-primary-fixed-dim/50 pb-32">
+    <!-- Top Header / Identity -->
+    <header
+        class="w-full border-b-4 border-on-surface bg-surface flex justify-between items-stretch h-24 z-40 sticky top-0">
+        <div class="flex items-center gap-md px-margin_desktop border-r-4 border-on-surface bg-primary text-on-primary">
+            <h1 class="font-display-lg text-display-lg uppercase m-0 leading-none tracking-tighter">ALGO<br />QUEST</h1>
+        </div>
+        <div
+            class="flex-1 flex justify-between items-center px-margin_desktop bg-background pattern-diagonal-lines pattern-surface-container pattern-bg-background pattern-size-4 pattern-opacity-20">
+            <div class="flex items-center gap-md">
+                <div class="w-16 h-16 border-4 border-on-surface overflow-hidden brutalist-border-alt">
+                    <img alt="Player 1 Avatar" class="w-full h-full object-cover grayscale contrast-125"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_ky1DPFtWuayfXNFni1MTTBP6BcHVl7i_wKyPifWssqvX2qPPr_VCHnqNALu7zU2q8t4OstldJJ_7Id9spW2OWEjAP01Ahv3VCyI3ynGgB3CTX2cGyIxEeNqHiqEFLQRJKNngKi76dq3bLrEOvOgHgaI4OYx2ZMbRp0LvOvRTsHwhuQfUJ3_mGmDQFYjRu-rKrfsP_AwZ9cN7fYEen8UgIrAx-DUJ5RcMdQsediYbsEzNaPprNkPaXGXzfn_OW2uxanJ9utyJI-uR" />
+                </div>
+                <div class="bg-surface-container-highest p-sm border-2 border-on-surface">
+                    <h2 class="font-headline-md text-headline-md text-primary uppercase m-0 leading-none">PLAYER 1</h2>
+                    <p class="font-mono-label text-mono-label text-on-surface mt-1">LVL 42_ARCHITECT</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-lg">
+                <div
+                    class="bg-tertiary-fixed-dim text-on-surface border-4 border-on-surface px-md py-sm font-headline-md text-headline-md uppercase flex items-center gap-sm transform rotate-2">
+                    <span class="material-symbols-outlined text-[32px]">local_fire_department</span>
+                    STREAK_14
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Fragmented XP Bar (Top of Content) -->
+    <div
+        class="w-full px-margin_desktop py-sm flex gap-xs bg-surface-container-lowest border-b-4 border-on-surface overflow-hidden">
+        <div class="h-6 flex-1 bg-primary border-2 border-on-surface"></div>
+        <div class="h-6 flex-1 bg-primary border-2 border-on-surface"></div>
+        <div class="h-6 flex-1 bg-primary border-2 border-on-surface"></div>
+        <div class="h-6 flex-1 bg-primary border-2 border-on-surface"></div>
+        <div class="h-6 flex-1 bg-primary-fixed-dim border-2 border-on-surface transform scale-y-125"></div>
+        <div class="h-6 flex-1 bg-surface-container border-2 border-on-surface border-dashed"></div>
+        <div class="h-6 flex-1 bg-surface-container border-2 border-on-surface border-dashed"></div>
+        <div class="font-mono-label text-mono-label ml-md self-center">XP_4200/5000</div>
+    </div>
+    <!-- Main Content Mosaic -->
+    <main class="px-margin_desktop py-xl flex-1 max-w-[1600px] mx-auto w-full">
+        <div class="grid grid-cols-1 md:grid-cols-12 auto-rows-min gap-lg relative">
+            <!-- Active Quests (Overlapping column) -->
+            <div class="col-span-1 md:col-span-7 flex flex-col gap-0 relative z-10">
+                <div
+                    class="bg-on-surface text-background px-md py-sm border-4 border-on-surface inline-block self-start mb-[-2px] relative z-20">
+                    <h4 class="font-headline-md text-headline-md uppercase m-0">ACTIVE_DIRECTIVES</h4>
+                </div>
+                <!-- Quest 1 -->
+                <div class="stack-item brutalist-border bg-surface-container p-lg mb-[-10px] relative z-10">
+                    <div class="flex justify-between items-start border-b-4 border-on-surface pb-sm mb-md">
+                        <div class="flex items-center gap-sm">
+                            <span class="material-symbols-outlined text-secondary-fixed text-[32px]">check_box</span>
+                            <h5 class="font-headline-md text-headline-md text-on-surface m-0 uppercase">Mastering Array
+                                Traversal</h5>
+                        </div>
+                        <div
+                            class="bg-secondary-fixed text-background px-sm py-xs border-2 border-on-surface font-headline-md text-headline-md">
+                            +100
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-md font-mono-label text-mono-label">
+                        <span class="bg-secondary-fixed text-background px-2 py-1 border-2 border-on-surface">100%
+                            COMPLETED</span>
+                        <span class="border-2 border-on-surface px-2 py-1">DIFF: EASY</span>
+                    </div>
+                </div>
+                <!-- Quest 2 -->
+                <div
+                    class="stack-item brutalist-border-secondary bg-surface p-lg mb-[-10px] relative z-20 transform translate-x-4">
+                    <div class="flex justify-between items-start border-b-4 border-on-surface pb-sm mb-md">
+                        <div class="flex items-center gap-sm text-on-surface">
+                            <span class="material-symbols-outlined text-primary-fixed-dim text-[32px]">swords</span>
+                            <h5 class="font-headline-md text-headline-md m-0 uppercase">String Manipulation Basics</h5>
+                        </div>
+                        <div
+                            class="bg-primary-fixed-dim text-background px-sm py-xs border-2 border-on-surface font-headline-md text-headline-md">
+                            +250
+                        </div>
+                    </div>
+                    <!-- Fragmented progress internal -->
+                    <div class="flex gap-xs h-4 mb-sm">
+                        <div class="flex-1 bg-primary-fixed-dim border border-on-surface"></div>
+                        <div class="flex-1 bg-primary-fixed-dim border border-on-surface"></div>
+                        <div class="flex-1 bg-surface-container border border-on-surface border-dashed"></div>
+                        <div class="flex-1 bg-surface-container border border-on-surface border-dashed"></div>
+                    </div>
+                    <div class="flex items-center gap-md font-mono-label text-mono-label mt-md">
+                        <span class="bg-primary text-background px-2 py-1 border-2 border-on-surface">45% ACTIVE</span>
+                        <span class="bg-tertiary-fixed text-background border-2 border-on-surface px-2 py-1">DIFF:
+                            MED</span>
+                    </div>
+                </div>
+                <!-- Quest 3 -->
+                <div
+                    class="stack-item brutalist-border-alt bg-surface-container-low p-lg relative z-30 transform -translate-x-2">
+                    <div class="flex justify-between items-start border-b-4 border-on-surface pb-sm mb-md">
+                        <div class="flex items-center gap-sm text-on-surface">
+                            <span class="material-symbols-outlined text-on-surface-variant text-[32px]">shield</span>
+                            <h5 class="font-headline-md text-headline-md m-0 uppercase">Advanced Loops in C++</h5>
+                        </div>
+                        <div
+                            class="bg-surface-container-highest text-on-surface px-sm py-xs border-2 border-on-surface font-headline-md text-headline-md">
+                            +200
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-md font-mono-label text-mono-label">
+                        <span class="border-2 border-on-surface px-2 py-1">10% INITIALIZED</span>
+                        <span class="bg-tertiary-fixed text-background border-2 border-on-surface px-2 py-1">DIFF:
+                            MED</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Side (Rewards & Network) -->
+            <div class="col-span-1 md:col-span-5 flex flex-col gap-xl relative z-0 md:mt-16">
+                <!-- Requisitions -->
+                <div class="stack-item brutalist-border bg-surface p-md">
+                    <div
+                        class="bg-primary text-background px-md py-sm border-b-4 border-on-surface mb-md flex justify-between items-center mx-[-16px] mt-[-16px]">
+                        <h4 class="font-headline-md text-headline-md uppercase m-0">REQUISITIONS</h4>
+                        <span
+                            class="font-mono-label text-mono-label border-2 border-background px-2 py-1 bg-background text-primary">BAL_4200</span>
+                    </div>
+                    <div class="flex flex-col gap-md">
+                        <!-- Reward 1 -->
+                        <div class="border-4 border-on-surface p-sm bg-secondary-fixed/10 flex gap-sm items-stretch">
+                            <div
+                                class="bg-secondary-fixed text-background w-16 flex items-center justify-center border-r-4 border-on-surface">
+                                <span class="material-symbols-outlined text-[32px]">sports_esports</span>
+                            </div>
+                            <div class="flex-1 flex flex-col justify-between py-xs">
+                                <h5 class="font-headline-md text-label-md uppercase m-0">1H Gaming Protocol</h5>
+                                <p class="font-mono-label text-secondary-fixed m-0">-500 XP</p>
+                            </div>
+                            <button
+                                class="bg-on-surface text-background font-headline-md uppercase px-sm border-l-4 border-on-surface hover:bg-secondary-fixed hover:text-on-surface transition-colors">
+                                EXECUTE
+                            </button>
+                        </div>
+                        <!-- Reward 3 (Epic) -->
+                        <div
+                            class="border-4 border-on-surface p-sm bg-primary-fixed-dim/10 mt-md relative overflow-hidden">
+                            <div
+                                class="absolute -right-4 -top-4 bg-primary text-background font-headline-md text-label-sm uppercase px-8 py-1 transform rotate-45 border-y-2 border-on-surface">
+                                EPIC_TIER
+                            </div>
+                            <div class="flex gap-sm items-start mb-sm">
+                                <div
+                                    class="bg-primary-fixed-dim text-background w-12 h-12 flex items-center justify-center border-2 border-on-surface">
+                                    <span class="material-symbols-outlined">keyboard</span>
+                                </div>
+                                <div>
+                                    <h5 class="font-headline-md text-label-md uppercase m-0">Mech Keyboard Upgrade</h5>
+                                    <p class="font-mono-label text-primary-fixed-dim m-0">-10,000 XP</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-1 h-3 mt-sm">
+                                <div class="w-[15%] bg-primary-fixed-dim border border-on-surface"></div>
+                                <div class="flex-1 bg-surface-container-highest border border-on-surface border-dashed">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Vital Signs -->
+                <div class="stack-item brutalist-border-secondary bg-surface-container p-md ml-4">
+                    <div class="border-b-4 border-on-surface mb-md pb-sm flex justify-between items-end">
+                        <h4 class="font-headline-md text-headline-md uppercase m-0">VITAL_SIGNS</h4>
+                        <span
+                            class="font-mono-label text-mono-label bg-on-surface text-background px-2 py-1">T-30_DAYS</span>
+                    </div>
+                    <div class="flex gap-1 flex-wrap w-full">
+                        <!-- Generate a 30-day pattern with brutalist styling -->
+                        <script>
+                            const intensities = [0, 10, 30, 60, 100, 10, 0, 0, 30, 60, 80, 100, 100, 60, 30, 10, 0, 10, 30, 60, 100, 80, 60, 30, 10, 0, 0, 10, 30, 100];
+                            document.write(intensities.map((val, i) => {
+                                let bgClass = 'bg-surface';
+                                let borderClass = 'border-2 border-surface-container-highest';
+                                if (val > 0) {
+                                    bgClass = 'bg-secondary-fixed';
+                                    borderClass = 'border-2 border-on-surface';
+                                }
+                                if (val >= 80) {
+                                    bgClass = 'bg-primary';
+                                }
+                                return `<div class="w-6 h-6 ${bgClass} ${borderClass} hover:scale-110 transition-transform cursor-pointer" style="opacity: ${val > 0 ? (val / 100) * 0.8 + 0.2 : 1}"></div>`;
+                            }).join(''));
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Fixed Bottom Bar (Replacing Sidebar) -->
+    <nav
+        class="fixed bottom-0 w-full h-20 bg-surface border-t-4 border-on-surface flex items-stretch z-50 overflow-x-auto">
+        <div class="flex-1 flex justify-center items-stretch min-w-max">
+            <a class="flex items-center gap-sm px-xl border-r-4 border-on-surface bg-primary text-background hover:bg-primary-fixed hover:text-on-surface transition-colors font-headline-md uppercase text-headline-md"
+                href="#">
+                <span class="material-symbols-outlined text-[32px]">dashboard</span>
+                <span>BASE</span>
+            </a>
+            <a class="flex items-center gap-sm px-xl border-r-4 border-on-surface text-on-surface hover:bg-surface-container-highest transition-colors font-headline-md uppercase text-headline-md"
+                href="#">
+                <span class="material-symbols-outlined text-[32px]">swords</span>
+                <span>LOG</span>
+            </a>
+            <a class="flex items-center gap-sm px-xl border-r-4 border-on-surface text-on-surface hover:bg-surface-container-highest transition-colors font-headline-md uppercase text-headline-md"
+                href="#">
+                <span class="material-symbols-outlined text-[32px]">shopping_bag</span>
+                <span>REQ</span>
+            </a>
+            <a class="flex items-center gap-sm px-xl border-r-4 border-on-surface text-on-surface hover:bg-surface-container-highest transition-colors font-headline-md uppercase text-headline-md"
+                href="#">
+                <span class="material-symbols-outlined text-[32px]">leaderboard</span>
+                <span>VITALS</span>
+            </a>
+        </div>
+        <div class="px-lg flex items-center justify-center bg-background border-l-4 border-on-surface">
+            <div
+                class="font-mono-label text-mono-label text-secondary-fixed-dim flex items-center gap-sm bg-surface-container border-2 border-secondary-fixed-dim px-sm py-xs">
+                <span class="w-3 h-3 bg-secondary-fixed-dim border border-on-surface"></span> SYS_ON
+            </div>
+        </div>
+    </nav>
+</body>
+
+</html>
