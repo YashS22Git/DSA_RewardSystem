@@ -225,10 +225,45 @@
     function getLevelColor(lvl) { return lvl?.color || '#94a3b8'; }
 
     function renderSquad() {
-      let members = [];
       const squad = Engine.getSquad();
-      if (!squad || squadMembers.length === 0) {
-        members = buildSquadMembers();
+      
+      // If NOT in a squad, show the "Join/Create Squad" CTA
+      if (!squad) {
+        document.getElementById('squad-header').style.display = 'none';
+        document.getElementById('podium-section').style.display = 'none';
+        document.getElementById('squad-count').textContent = '';
+        
+        document.getElementById('squad-list').innerHTML = `
+          <div class="card card-glow-cyan" style="text-align:center;padding:40px;margin-bottom:20px;">
+            <div style="font-size:48px;margin-bottom:16px;">⚔️</div>
+            <div style="font-size:22px;font-weight:700;margin-bottom:8px;">You are not in a Squad yet!</div>
+            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto;">
+              Squads allow you to team up with your friends, share a code, and track each other's DSA placement prep progress in real-time. Don't prep alone!
+            </div>
+            <a href="squad.html" class="btn btn-primary btn-lg">Create or Join a Squad 🚀</a>
+          </div>
+        `;
+        return;
+      }
+
+      // Ensure headers/podiums are visible when in a squad
+      document.getElementById('squad-header').style.display = 'flex';
+      document.getElementById('podium-section').style.display = 'block';
+
+      // Map squad members
+      let members = [];
+      if (squadMembers.length === 0) {
+        const summary = Engine.getSummary();
+        members = [{
+          name: summary.profile.name,
+          avatar: summary.profile.avatar,
+          xp: summary.profile.xp,
+          streak: summary.streak.current,
+          completed: summary.completedCount,
+          total: DSA_DATA.totalSubtopics,
+          isYou: true,
+          level: Engine.getLevelForXP(summary.profile.xp)
+        }];
       } else {
         const summary = Engine.getSummary();
         members = squadMembers.map((m) => ({
@@ -238,14 +273,15 @@
           level: Engine.getLevelForXP(m.xp)
         })).sort((a, b) => b.xp - a.xp);
       }
+      
       const youIdx = members.findIndex(m => m.isYou);
 
       // Header
       document.getElementById('squad-header').innerHTML = `
         <div>
           <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;">Current Squad</div>
-          <div style="font-size:22px;font-weight:700;margin-top:4px;">${squad?.name || 'Demo Squad'}</div>
-          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">Code: <span class="text-cyan font-orbitron">${squad?.code || 'DEMO01'}</span></div>
+          <div style="font-size:22px;font-weight:700;margin-top:4px;">${squad.name}</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">Code: <span class="text-cyan font-orbitron">${squad.code}</span></div>
         </div>
         <div style="display:flex;gap:24px;flex-wrap:wrap;">
           <div style="text-align:center;">
@@ -253,7 +289,7 @@
             <div style="font-size:12px;color:var(--text-secondary);">Members</div>
           </div>
           <div style="text-align:center;">
-            <div style="font-size:28px;font-weight:700;font-family:'Orbitron',sans-serif;color:var(--cyan);">#${youIdx + 1}</div>
+            <div style="font-size:28px;font-weight:700;font-family:'Orbitron',sans-serif;color:var(--cyan);">${youIdx !== -1 ? '#' + (youIdx + 1) : '-'}</div>
             <div style="font-size:12px;color:var(--text-secondary);">Your Rank</div>
           </div>
           <div style="text-align:center;">
@@ -267,27 +303,46 @@
 
       // Podium (top 3)
       const top3 = members.slice(0, 3);
-      const podiumOrder = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3;
-      const podiumHeights = ['90px', '120px', '70px'];
-      const podiumColors = ['#94a3b8', 'var(--gold)', '#b45309'];
-      const podiumBg = ['rgba(148,163,184,0.1)', 'rgba(251,191,36,0.1)', 'rgba(180,83,9,0.1)'];
-      const podiumNums = [2, 1, 3];
+      let podiumOrder = [];
+      let heights = [];
+      let colors = [];
+      let bgs = [];
+      let nums = [];
+
+      if (top3.length === 1) {
+        podiumOrder = [top3[0]];
+        heights = ['120px'];
+        colors = ['var(--gold)'];
+        bgs = ['rgba(251,191,36,0.1)'];
+        nums = [1];
+      } else if (top3.length === 2) {
+        podiumOrder = [top3[0], top3[1]];
+        heights = ['120px', '90px'];
+        colors = ['var(--gold)', '#94a3b8'];
+        bgs = ['rgba(251,191,36,0.1)', 'rgba(148,163,184,0.1)'];
+        nums = [1, 2];
+      } else {
+        podiumOrder = [top3[1], top3[0], top3[2]];
+        heights = ['90px', '120px', '70px'];
+        colors = ['#94a3b8', 'var(--gold)', '#b45309'];
+        bgs = ['rgba(148,163,184,0.1)', 'rgba(251,191,36,0.1)', 'rgba(180,83,9,0.1)'];
+        nums = [2, 1, 3];
+      }
 
       document.getElementById('podium-section').innerHTML = `
         <div class="card card-glow-gold mb-20">
           <div class="podium">
             ${podiumOrder.map((m, i) => {
-              const realIdx = i === 0 ? 1 : i === 1 ? 0 : 2;
               return `
-                <div class="podium-slot podium-${podiumNums[i]}${podiumNums[i] === 1 ? 'st' : podiumNums[i] === 2 ? 'nd' : 'rd'}">
+                <div class="podium-slot podium-${nums[i]}${nums[i] === 1 ? 'st' : nums[i] === 2 ? 'nd' : 'rd'}">
                   <div class="podium-name">${m.name.split(' ')[0]}${m.isYou ? ' (You)' : ''}</div>
-                  <div class="podium-avatar" style="border-color:${podiumColors[i]};box-shadow:0 0 15px ${podiumColors[i]}44;">
-                    ${podiumNums[i] === 1 ? '<div class="crown">👑</div>' : ''}
+                  <div class="podium-avatar" style="border-color:${colors[i]};box-shadow:0 0 15px ${colors[i]}44;">
+                    ${nums[i] === 1 ? '<div class="crown">👑</div>' : ''}
                     ${m.avatar}
                   </div>
-                  <div class="podium-xp" style="color:${podiumColors[i]}">${m.xp.toLocaleString()} XP</div>
-                  <div class="podium-bar" style="height:${podiumHeights[i]};background:${podiumBg[i]};border:1px solid ${podiumColors[i]}44;">
-                    ${podiumNums[i]}
+                  <div class="podium-xp" style="color:${colors[i]}">${m.xp.toLocaleString()} XP</div>
+                  <div class="podium-bar" style="height:${heights[i]};background:${bgs[i]};border:1px solid ${colors[i]}44;">
+                    ${nums[i]}
                   </div>
                 </div>
               `;
@@ -298,7 +353,7 @@
 
       // Full list
       const rankIcons = ['🥇', '🥈', '🥉'];
-      document.getElementById('squad-list').innerHTML = members.map((m, i) => {
+      let listHtml = members.map((m, i) => {
         const rank = i + 1;
         const rankClass = rank === 1 ? 'gold-rank' : rank === 2 ? 'silver-rank' : rank === 3 ? 'bronze-rank' : '';
         const pct = Math.round((m.completed / m.total) * 100);
@@ -340,6 +395,21 @@
           </div>
         `;
       }).join('');
+
+      if (members.length === 1) {
+        listHtml += `
+          <div style="text-align:center;padding:20px;border:1px dashed var(--border);border-radius:var(--radius);margin-top:16px;">
+            <div style="font-size:14px;font-weight:600;color:var(--cyan);margin-bottom:6px;">You are the only warrior in this squad!</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Share your squad code with friends to compete together:</div>
+            <div class="squad-code" style="font-size:20px;padding:8px 16px;display:inline-block;margin-bottom:12px;">${squad.code}</div>
+            <div>
+              <a href="squad.html" class="btn btn-sm btn-primary">Invite Friends ⚔️</a>
+            </div>
+          </div>
+        `;
+      }
+
+      document.getElementById('squad-list').innerHTML = listHtml;
     }
 
     function renderGlobal() {
