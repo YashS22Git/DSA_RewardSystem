@@ -44,7 +44,6 @@ The primary goal of **DSA Quest** is to eliminate the tediousness of studying DS
 
 ---
 
-## 📸 Screenshots
 
 ### 🖥️ Dashboard View
 *Shows level progression, XP tracking, daily checklist, recent achievements, and streak heatmap.*
